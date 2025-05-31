@@ -2,21 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import '../App.css';
 import Chart from './chart';
 import { UserToken } from './UserToken';
+import { useTokens } from '../Contexts/TokensContext';
+import { useCurrentUser } from '../Contexts/CurrentUserContext';
 
 function getRandomColor() {
   const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-export default function ChartWithTokens({
-  setUserId,
-  userId,
-  tokens,
-  setTokens,
-  size,
-  setSize,
-  userIsLockedIn,
-}) {
+export default function ChartWithTokens() {
+  const { tokens, setTokens } = useTokens();
+  const { userId, setUserId, size, setSize, lockedIn, setLockedIn } =
+    useCurrentUser();
+
   // Track client container size
   const containerRef = useRef(null);
   // Resize observer for responsive sizing
@@ -77,7 +75,7 @@ export default function ChartWithTokens({
       const label = userId.slice(0, 2).toUpperCase();
       // Always send normalized coordinates to server
       const token = {
-        ...toNormalized(200, 200),
+        ...toNormalized(Math.random() * 500 + 200, 200),
         color,
         label,
         userId,
@@ -88,7 +86,7 @@ export default function ChartWithTokens({
 
   // Drag logic for this user's token
   const handleMouseDown = (e) => {
-    if (userIsLockedIn) return;
+    if (lockedIn) return;
     setDragging(true);
     const myToken = tokens[userId];
     // Convert normalized to px for offset
@@ -123,15 +121,15 @@ export default function ChartWithTokens({
   useEffect(() => {
     if (!tokens[userId]) return;
     const newToken = tokens[userId];
-    newToken.lockedIn = !userIsLockedIn;
+    newToken.lockedIn = !lockedIn;
     ws.current.send(
       JSON.stringify({
         type: 'lockedIn',
         token: newToken,
-        lockedIn: userIsLockedIn,
+        lockedIn: lockedIn,
       })
     );
-  }, [userIsLockedIn]);
+  }, [lockedIn]);
 
   return (
     <div
@@ -161,7 +159,7 @@ export default function ChartWithTokens({
             color={token.color}
             label={token.userId !== userId ? token.label : 'You'}
             onMouseDown={token.userId === userId ? handleMouseDown : undefined}
-            lockedIn={userIsLockedIn}
+            lockedIn={lockedIn}
             dragging={dragging}
             notMe={token.userId !== userId}
           />

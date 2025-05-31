@@ -24,7 +24,6 @@ export function UserToken({
           border: '3px solid #fff',
           boxShadow: '0 2px 8px #0008',
           transform: 'translate(-50%, -50%)',
-          cursor: 'grab',
           zIndex: 10,
           display: 'flex',
           alignItems: 'center',
