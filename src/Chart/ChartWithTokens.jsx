@@ -113,7 +113,8 @@ export default function ChartWithTokens() {
         maxWidth: '1000px',
         maxHeight: '1000px',
         position: 'relative',
-        overflow: 'hidden',
+        // marginTop: '20px',
+        // overflow: 'hidden',
       }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -130,7 +131,7 @@ export default function ChartWithTokens() {
             x={x}
             y={y}
             color={token.color}
-            label={token.label}
+            label={token.userId !== userId ? token.label : 'You'}
             onMouseDown={token.userId === userId ? handleMouseDown : undefined}
           />
         );
