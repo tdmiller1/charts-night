@@ -1,39 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Chart from './Chart/chart';
 import { UserToken } from './UserToken';
 
+function getRandomColor() {
+  const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
 function App() {
-  // Multiple user tokens, each with absolute coordinates
-  const [tokens, setTokens] = useState([
-    { x: 200, y: 200, color: '#61dafb', label: 'A' },
-    { x: 300, y: 300, color: '#ffb347', label: 'B' },
-    { x: 400, y: 250, color: '#e06666', label: 'C' },
-  ]);
-  const [draggingIdx, setDraggingIdx] = useState(null);
+  // Each user gets a unique color and label
+  const [userId, setUserId] = useState(null);
+  const [tokens, setTokens] = useState({}); // { userId: { x, y, color, label, userId } }
+  const ws = useRef(null);
+  const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  const handleMouseDown = (idx, e) => {
-    setDraggingIdx(idx);
+  // Connect to WebSocket server
+  useEffect(() => {
+    ws.current = new WebSocket('ws://localhost:3001');
+    ws.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'init') {
+        setUserId(data.userId);
+        setTokens(data.tokens || {});
+      } else if (data.type === 'tokens') {
+        setTokens(data.tokens || {});
+      }
+    };
+    return () => ws.current && ws.current.close();
+  }, []);
+
+  // On first connect, create a token for this user if not present
+  useEffect(() => {
+    if (userId && !tokens[userId]) {
+      const color = getRandomColor();
+      const label = userId.slice(0, 2).toUpperCase();
+      const token = { x: 200, y: 200, color, label, userId };
+      ws.current.send(JSON.stringify({ type: 'move', token }));
+    }
+  }, [userId, tokens]);
+
+  // Drag logic for this user's token
+  const handleMouseDown = (e) => {
+    setDragging(true);
+    const myToken = tokens[userId];
     setOffset({
-      x: e.clientX - tokens[idx].x,
-      y: e.clientY - tokens[idx].y,
+      x: e.clientX - myToken.x,
+      y: e.clientY - myToken.y,
     });
   };
 
   const handleMouseMove = (e) => {
-    if (draggingIdx !== null) {
-      setTokens((prev) =>
-        prev.map((t, i) =>
-          i === draggingIdx
-            ? { ...t, x: e.clientX - offset.x, y: e.clientY - offset.y }
-            : t
-        )
-      );
+    if (dragging && userId && tokens[userId]) {
+      const newToken = {
+        ...tokens[userId],
+        x: e.clientX - offset.x,
+        y: e.clientY - offset.y,
+      };
+      ws.current.send(JSON.stringify({ type: 'move', token: newToken }));
     }
   };
 
-  const handleMouseUp = () => setDraggingIdx(null);
+  const handleMouseUp = () => setDragging(false);
 
   return (
     <div
@@ -50,14 +79,14 @@ function App() {
     >
       <Chart />
       {/* Render all user tokens */}
-      {tokens.map((token, idx) => (
+      {Object.values(tokens).map((token) => (
         <UserToken
-          key={idx}
+          key={token.userId}
           x={token.x}
           y={token.y}
           color={token.color}
           label={token.label}
-          onMouseDown={(e) => handleMouseDown(idx, e)}
+          onMouseDown={token.userId === userId ? handleMouseDown : undefined}
         />
       ))}
     </div>
