@@ -4,6 +4,7 @@ import Chart from './chart';
 import { UserToken } from './UserToken';
 import { useTokens } from '../Contexts/TokensContext';
 import { useCurrentUser } from '../Contexts/CurrentUserContext';
+import { useGameController } from '../Contexts/GameControllerProvider';
 
 function getRandomColor() {
   const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
@@ -11,9 +12,9 @@ function getRandomColor() {
 }
 
 export default function ChartWithTokens() {
-  const { tokens, setTokens } = useTokens();
-  const { userId, setUserId, size, setSize, lockedIn, setLockedIn } =
-    useCurrentUser();
+  const { tokens } = useTokens();
+  const { userId, size, setSize, lockedIn } = useCurrentUser();
+  const { userHandleMouseMove, userLockingIn } = useGameController();
 
   // Track client container size
   const containerRef = useRef(null);
@@ -33,24 +34,9 @@ export default function ChartWithTokens() {
   }, []);
 
   // Each user gets a unique color and label
-  const ws = useRef(null);
+  // const ws = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-  // Connect to WebSocket server
-  useEffect(() => {
-    ws.current = new WebSocket('ws://localhost:3001');
-    ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'init') {
-        setUserId(data.userId);
-        setTokens(data.tokens || {});
-      } else if (data.type === 'tokens') {
-        setTokens(data.tokens || {});
-      }
-    };
-    return () => ws.current && ws.current.close();
-  }, []);
 
   // --- Coordinate normalization helpers ---
   // Convert absolute px to normalized (0-1000) for server
@@ -67,22 +53,6 @@ export default function ChartWithTokens() {
       y: (y / 1000) * size.height,
     };
   }
-
-  // On first connect, create a token for this user if not present
-  useEffect(() => {
-    if (userId && !tokens[userId]) {
-      const color = getRandomColor();
-      const label = userId.slice(0, 2).toUpperCase();
-      // Always send normalized coordinates to server
-      const token = {
-        ...toNormalized(Math.random() * 500 + 200, 200),
-        color,
-        label,
-        userId,
-      };
-      ws.current.send(JSON.stringify({ type: 'move', token }));
-    }
-  }, [userId, tokens, size.width, size.height]);
 
   // Drag logic for this user's token
   const handleMouseDown = (e) => {
@@ -106,29 +76,19 @@ export default function ChartWithTokens() {
         x,
         y,
       };
-      ws.current.send(
-        JSON.stringify({
-          type: 'move',
-          token: newToken,
-        })
-      );
+
+      userHandleMouseMove({ newToken });
     }
   };
 
   const handleMouseUp = () => setDragging(false);
 
-  //   FIX THIS ITS NOT WORKING
   useEffect(() => {
     if (!tokens[userId]) return;
     const newToken = tokens[userId];
     newToken.lockedIn = !lockedIn;
-    ws.current.send(
-      JSON.stringify({
-        type: 'lockedIn',
-        token: newToken,
-        lockedIn: lockedIn,
-      })
-    );
+
+    userLockingIn({ newToken });
   }, [lockedIn]);
 
   return (
