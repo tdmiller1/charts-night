@@ -8,11 +8,9 @@ function getRandomColor() {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-export default function ChartWithTokens() {
+export default function ChartWithTokens({ tokens, setTokens, size, setSize }) {
   // Track client container size
   const containerRef = useRef(null);
-  const [size, setSize] = useState({ width: 1000, height: 1000 });
-
   // Resize observer for responsive sizing
   useEffect(() => {
     function updateSize() {
@@ -30,7 +28,6 @@ export default function ChartWithTokens() {
 
   // Each user gets a unique color and label
   const [userId, setUserId] = useState(null);
-  const [tokens, setTokens] = useState({}); // { userId: { x, y, color, label, userId } }
   const ws = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -72,7 +69,12 @@ export default function ChartWithTokens() {
       const color = getRandomColor();
       const label = userId.slice(0, 2).toUpperCase();
       // Always send normalized coordinates to server
-      const token = { ...toNormalized(200, 200), color, label, userId };
+      const token = {
+        ...toNormalized(200, 200),
+        color,
+        label,
+        userId,
+      };
       ws.current.send(JSON.stringify({ type: 'move', token }));
     }
   }, [userId, tokens, size.width, size.height]);
@@ -125,6 +127,7 @@ export default function ChartWithTokens() {
       {Object.values(tokens).map((token) => {
         // Convert normalized to px for rendering
         const { x, y } = fromNormalized(token.x, token.y);
+
         return (
           <UserToken
             key={token.userId}

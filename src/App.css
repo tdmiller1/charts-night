@@ -1,4 +1,5 @@
 #root {
+  height: 100vh;
   margin: 0 auto;
   text-align: center;
 }
@@ -55,4 +56,61 @@
   min-height: 80px;
   min-width: 80px;
   border: 1px solid black;
+}
+
+/* Layout container for the whole app */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Header at the top */
+.app-header {
+  height: 60px;
+  width: 100%;
+  background: #222;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+  font-size: 1.5rem;
+  box-shadow: 0 2px 8px #0002;
+  z-index: 10;
+}
+
+/* Main area: sidebar + content */
+.app-main {
+  display: flex;
+  flex: 1 1 auto;
+  height: calc(100vh - 60px);
+}
+
+/* Sidebar on the left */
+.app-sidebar {
+  width: 220px;
+  background: #333;
+  color: #fff;
+  padding: 1.5rem 1rem;
+  box-shadow: 2px 0 8px #0002;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Main content area */
+.app-content {
+  flex: 1 1 auto;
+  background: #f7f7fa;
+  padding: 2rem;
+  overflow: auto;
+  min-width: 0;
+}
+
+.chart-container {
+  place-items: center;
+  display: grid;
+  height: 100%;
+  width: 100%;
 }
