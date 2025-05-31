@@ -8,7 +8,13 @@ function getRandomColor() {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-export default function ChartWithTokens({ tokens, setTokens, size, setSize }) {
+export default function ChartWithTokens({
+  tokens,
+  setTokens,
+  size,
+  setSize,
+  userIsLockedIn,
+}) {
   // Track client container size
   const containerRef = useRef(null);
   // Resize observer for responsive sizing
@@ -81,6 +87,7 @@ export default function ChartWithTokens({ tokens, setTokens, size, setSize }) {
 
   // Drag logic for this user's token
   const handleMouseDown = (e) => {
+    if (userIsLockedIn) return;
     setDragging(true);
     const myToken = tokens[userId];
     // Convert normalized to px for offset
@@ -115,8 +122,6 @@ export default function ChartWithTokens({ tokens, setTokens, size, setSize }) {
         maxWidth: '1000px',
         maxHeight: '1000px',
         position: 'relative',
-        // marginTop: '20px',
-        // overflow: 'hidden',
       }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -136,6 +141,9 @@ export default function ChartWithTokens({ tokens, setTokens, size, setSize }) {
             color={token.color}
             label={token.userId !== userId ? token.label : 'You'}
             onMouseDown={token.userId === userId ? handleMouseDown : undefined}
+            lockedIn={userIsLockedIn}
+            dragging={dragging}
+            notMe={token.userId !== userId}
           />
         );
       })}

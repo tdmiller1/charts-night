@@ -1,6 +1,15 @@
 import React from 'react';
 
-export function UserToken({ x, y, onMouseDown, color = '#61dafb', label }) {
+export function UserToken({
+  x,
+  y,
+  onMouseDown,
+  color = '#61dafb',
+  label,
+  lockedIn,
+  dragging,
+  notMe,
+}) {
   return (
     <>
       <div
@@ -23,6 +32,8 @@ export function UserToken({ x, y, onMouseDown, color = '#61dafb', label }) {
           color: '#222',
           fontWeight: 'bold',
           userSelect: 'none',
+          cursor:
+            lockedIn || notMe ? 'not-allowed' : dragging ? 'grabbing' : 'grab',
         }}
         onMouseDown={onMouseDown}
       >

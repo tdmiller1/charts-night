@@ -4,8 +4,9 @@ import ChartWithTokens from './Chart/ChartWithTokens';
 
 function App() {
   const [size, setSize] = useState({ width: 1000, height: 1000 });
-
+  const [lockedIn, setLockedIn] = useState(false);
   const [tokens, setTokens] = useState({});
+
   function fromNormalized(x, y) {
     return {
       x: (x / 1000) * size.width,
@@ -15,7 +16,14 @@ function App() {
 
   return (
     <div className="app-layout">
-      <div className="app-header">Game Master</div>
+      <div className="app-header">
+        <div>Game Master</div>
+        <div>
+          <button onClick={() => setLockedIn((prev) => !prev)}>
+            {lockedIn ? 'Unlock Please' : 'Lock In'}
+          </button>
+        </div>
+      </div>
       <div className="app-main">
         <div className="app-sidebar">
           <div
@@ -43,6 +51,7 @@ function App() {
               setTokens={setTokens}
               size={size}
               setSize={setSize}
+              userIsLockedIn={lockedIn}
             />
           </div>
         </div>
