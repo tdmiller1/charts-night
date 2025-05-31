@@ -6,6 +6,7 @@ function App() {
   const [size, setSize] = useState({ width: 1000, height: 1000 });
   const [lockedIn, setLockedIn] = useState(false);
   const [tokens, setTokens] = useState({});
+  const [userId, setUserId] = useState(null);
 
   function fromNormalized(x, y) {
     return {
@@ -38,7 +39,8 @@ function App() {
               {Object.values(tokens).map((token) => (
                 <li>
                   {token.label}: ({fromNormalized(token.x, token.y).x},{' '}
-                  {Math.floor(fromNormalized(token.y, token.y).y)})
+                  {Math.floor(fromNormalized(token.y, token.y).y)}) LOCK:{' '}
+                  {token.lockedIn ? 'Yes' : 'No'}
                 </li>
               ))}
             </ul>
@@ -47,6 +49,8 @@ function App() {
         <div className="app-content">
           <div className="chart-container">
             <ChartWithTokens
+              setUserId={setUserId}
+              userId={userId}
               tokens={tokens}
               setTokens={setTokens}
               size={size}

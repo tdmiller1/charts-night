@@ -9,6 +9,8 @@ function getRandomColor() {
 }
 
 export default function ChartWithTokens({
+  setUserId,
+  userId,
   tokens,
   setTokens,
   size,
@@ -33,7 +35,6 @@ export default function ChartWithTokens({
   }, []);
 
   // Each user gets a unique color and label
-  const [userId, setUserId] = useState(null);
   const ws = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -107,11 +108,30 @@ export default function ChartWithTokens({
         x,
         y,
       };
-      ws.current.send(JSON.stringify({ type: 'move', token: newToken }));
+      ws.current.send(
+        JSON.stringify({
+          type: 'move',
+          token: newToken,
+        })
+      );
     }
   };
 
   const handleMouseUp = () => setDragging(false);
+
+  //   FIX THIS ITS NOT WORKING
+  useEffect(() => {
+    if (!tokens[userId]) return;
+    const newToken = tokens[userId];
+    newToken.lockedIn = !userIsLockedIn;
+    ws.current.send(
+      JSON.stringify({
+        type: 'lockedIn',
+        token: newToken,
+        lockedIn: userIsLockedIn,
+      })
+    );
+  }, [userIsLockedIn]);
 
   return (
     <div

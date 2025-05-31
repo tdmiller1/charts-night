@@ -31,6 +31,18 @@ wss.on('connection', (ws) => {
         }
       });
     }
+    if (data.type === 'lockedIn') {
+      // Update lockedIn state for this user
+      if (tokens[userId]) {
+        tokens[userId].lockedIn = data.lockedIn;
+      }
+      // Broadcast updated tokens
+      wss.clients.forEach((client) => {
+        if (client.readyState === WS.OPEN) {
+          client.send(JSON.stringify({ type: 'tokens', tokens }));
+        }
+      });
+    }
   });
 
   ws.on('close', () => {
