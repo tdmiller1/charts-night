@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function Chart() {
+export default function Chart({ width = 1000, height = 1000, staticMode }) {
   const [count, setCount] = useState(5); // Dynamic number of points
 
   // Example image URL (replace with your own if needed)
@@ -16,22 +16,15 @@ export default function Chart() {
   });
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        background: '#222',
-        position: 'relative',
-      }}
-    >
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 2 }}>
         <button onClick={() => setCount((c) => Math.max(3, c - 1))}>-</button>
         <span style={{ color: '#fff', margin: '0 1em' }}>{count}</span>
         <button onClick={() => setCount((c) => c + 1)}>+</button>
       </div>
       <svg
-        width="100%"
-        height="100%"
+        width={width}
+        height={height}
         viewBox="0 0 100 100"
         style={{
           position: 'absolute',
