@@ -105,7 +105,11 @@ export default function ChartWithTokens() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <Chart width={size.width} height={size.height} />
+      <Chart
+        key={`${size.width}:${size.height}`}
+        width={size.width}
+        height={size.height}
+      />
       {/* Render all user tokens */}
       {Object.values(tokens).map((token) => {
         // Convert normalized to px for rendering

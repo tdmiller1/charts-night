@@ -1,7 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useGameController } from '../Contexts/GameControllerProvider';
 
 export default function Chart({ width = 1000, height = 1000, staticMode }) {
-  const [count, setCount] = useState(5); // Dynamic number of points
+  const { photos } = useGameController();
+  const [count, setCount] = useState(Object.entries(photos).length);
+
+  useEffect(() => {
+    if (Object.entries(photos).length > 0) {
+      setCount(Object.entries(photos).length);
+    }
+  }, [photos]);
 
   // Example image URL (replace with your own if needed)
   const imageUrl = '/src/assets/darcy.jpg';
@@ -55,9 +63,9 @@ export default function Chart({ width = 1000, height = 1000, staticMode }) {
       {/* Place images at each point */}
       {points.map((p, i) => (
         <img
-          key={`img-${i}`}
-          src={imageUrl}
-          alt={`point-${i}`}
+          key={Object.values(photos).at(i)?.id}
+          src={Object.values(photos).at(i)?.dataUrl}
+          alt={Object.values(photos).at(i)?.name}
           style={{
             position: 'absolute',
             left: `${p.x}%`,

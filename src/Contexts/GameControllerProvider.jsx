@@ -14,6 +14,7 @@ export function GameControllerProvider({ children }) {
   const ws = useRef(null);
   const { tokens, setTokens } = useTokens();
   const { userId, setUserId, size, lockedIn } = useCurrentUser();
+  const [photos, setPhotos] = useState({});
 
   function toNormalized(x, y) {
     return {
@@ -30,8 +31,14 @@ export function GameControllerProvider({ children }) {
       if (data.type === 'init') {
         setUserId(data.userId);
         setTokens(data.tokens || {});
+        setPhotos(data.photos || {});
       } else if (data.type === 'tokens') {
         setTokens(data.tokens || {});
+      } else if (data.type === 'photos') {
+        setPhotos((prevPhotos) => ({
+          ...prevPhotos,
+          ...data.photos,
+        }));
       }
     };
     return () => ws.current && ws.current.close();
@@ -73,9 +80,28 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function userAddPhoto(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      ws.current.send(
+        JSON.stringify({
+          type: 'addPhoto',
+          photo: {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified,
+            dataUrl: e.target.result,
+          },
+        })
+      );
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <GameControllerContext.Provider
-      value={{ userHandleMouseMove, userLockingIn }}
+      value={{ photos, userHandleMouseMove, userLockingIn, userAddPhoto }}
     >
       {children}
     </GameControllerContext.Provider>
