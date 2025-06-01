@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useCurrentUser } from './Contexts/hooks';
 import { useTokens, useGameController } from './Contexts/hooks';
 import { useSocketConnection } from './Contexts/hooks';
@@ -88,7 +88,9 @@ export default function Header() {
               name="gameMode"
               value="god"
               checked={gameState.mode === 'god'}
-              onChange={() => userChangeGameMode('god')}
+              onChange={() => {
+                userChangeGameMode('god');
+              }}
             />
             God Mode
           </label>

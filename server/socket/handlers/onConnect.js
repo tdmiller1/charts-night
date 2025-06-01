@@ -139,11 +139,20 @@ export default function onConnect(ws, wss) {
       }
       // Update game mode
       gameRoom.mode = data.mode;
+
+      if (data.mode === 'ffa') {
+        // Reset all tokens to default positions for FFA mode
+        Object.keys(tokens).forEach((id) => {
+          tokens[id].lockedIn = false; // Reset lockedIn state
+        });
+      }
+
       console.log(`Game mode updated by user ${ws.userId}:`, gameRoom.mode);
       // Broadcast updated game mode to all clients
       wss.clients.forEach((client) => {
         if (client.readyState === WS.OPEN) {
           client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
+          client.send(JSON.stringify({ type: 'tokens', tokens }));
         }
       });
     }

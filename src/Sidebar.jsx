@@ -2,7 +2,7 @@ import { useTokens, useGameController } from './Contexts/hooks';
 
 export default function Sidebar() {
   const { tokens } = useTokens();
-  const { userAddPhoto } = useGameController();
+  const { userAddPhoto, gameState } = useGameController();
 
   // Allows the user to select a photo from their computer
   // it will then call gamecontroller userAddPhoto with the file
@@ -109,6 +109,8 @@ export default function Sidebar() {
     return luminance > 180; // threshold for white text
   }
 
+  const isFFA = gameState?.mode === 'ffa';
+
   return (
     <div
       style={{
@@ -127,8 +129,8 @@ export default function Sidebar() {
 
           function truncateLabel(l) {
             if (!l) return 'Unknown';
-            if (l.length > 20) {
-              return l.slice(0, 20) + '... ';
+            if (l.length > 15) {
+              return l.slice(0, 15) + '... ';
             }
             return l;
           }
@@ -152,7 +154,7 @@ export default function Sidebar() {
                 {/* : ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
                 {Math.floor(fromNormalized(token.y, token.y).y)}) */}
               </span>
-              {token.lockedIn ? <LockIcon /> : <UnlockIcon />}
+              {isFFA ? token.lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
             </li>
           );
         })}

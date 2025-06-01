@@ -113,6 +113,7 @@ export function GameControllerProvider({ children }) {
       console.warn('No token found for userId:', userId);
       return;
     }
+    if (gameState.mode === 'god') return; // In god mode, lockedIn is not applicable
     const newToken = { ...tokens[userId] };
     newToken.lockedIn = !newToken.lockedIn;
     setLockedIn(newToken.lockedIn);
@@ -162,6 +163,10 @@ export function GameControllerProvider({ children }) {
   }
 
   function userChangeGameMode(mode) {
+    if (gameState.mode === mode) return; // No change needed
+    if (mode === 'god') {
+      resetUsersLockedIn();
+    }
     ws.current.send(
       JSON.stringify({
         type: 'gameMode',
