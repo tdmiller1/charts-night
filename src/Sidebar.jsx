@@ -30,6 +30,40 @@ export default function Sidebar() {
     input.click();
   }
 
+  // Simple lock/unlock icons as SVGs
+  const LockIcon = () => (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      style={{ verticalAlign: 'middle' }}
+    >
+      <rect x="3" y="7" width="10" height="6" rx="2" fill="#888" />
+      <path
+        d="M5 7V5a3 3 0 1 1 6 0v2"
+        stroke="#888"
+        strokeWidth="1.5"
+        fill="none"
+      />
+    </svg>
+  );
+  const UnlockIcon = () => (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      style={{ verticalAlign: 'middle' }}
+    >
+      <rect x="3" y="7" width="10" height="6" rx="2" fill="#888" />
+      <path
+        d="M11 7V5a3 3 0 0 0-6 0"
+        stroke="#888"
+        strokeWidth="1.5"
+        fill="none"
+      />
+    </svg>
+  );
+
   return (
     <div style={{ maxWidth: '100%', overflow: 'auto', wordWrap: 'break-word' }}>
       <h4>Players</h4>
@@ -37,42 +71,12 @@ export default function Sidebar() {
         {Object.values(tokens).map((token) => (
           <li key={token.userId}>
             {token.label}: ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
-            {Math.floor(fromNormalized(token.y, token.y).y)}) LOCK:{' '}
-            {token.lockedIn ? 'Yes' : 'No'}
+            {Math.floor(fromNormalized(token.y, token.y).y)}){' '}
+            {token.lockedIn ? <LockIcon /> : <UnlockIcon />}
           </li>
         ))}
       </ul>
       <button onClick={handleAddPhoto}>Add Photo</button>
-      {/* Display uploaded photos */}
-      {/* <div style={{ marginTop: 16 }}>
-        <img
-          style={{
-            maxWidth: 120,
-            maxHeight: 120,
-            margin: 4,
-            borderRadius: 8,
-            border: '1px solid #ccc',
-          }}
-          src="https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRYsTCZAfCg8v3AWG5JJy68Nge5gIUdaQNl7bZ81RHjOKEqQ2sDGVpCYrAj-aFvjJdMor8MlmPYDXYwwsAvfKa6gw"
-        />
-        {Object.values(photos).map((photo) => (
-          <>
-            <p>{photo.name}</p>
-            <img
-              key={photo.name}
-              src={photo.dataUrl}
-              alt={photo.name}
-              style={{
-                maxWidth: 120,
-                maxHeight: 120,
-                margin: 4,
-                borderRadius: 8,
-                border: '1px solid #ccc',
-              }}
-            />
-          </>
-        ))}
-      </div> */}
     </div>
   );
 }

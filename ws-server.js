@@ -1,6 +1,8 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { WebSocketServer, WebSocket as WS } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
+
+dotenv.config();
 
 // Use environment variable for port, default to 3001
 const PORT = process.env.PORT || 3001;

@@ -69,7 +69,6 @@
 /* Header at the top */
 .app-header {
   height: 60px;
-  width: 100%;
   background: #222;
   color: #fff;
   display: flex;

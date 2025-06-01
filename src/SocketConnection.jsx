@@ -159,7 +159,7 @@ export default function SocketConnection({ children }) {
   }
 
   return (
-    <SocketConnectionContext.Provider value={wsUrl}>
+    <SocketConnectionContext.Provider value={{ wsUrl }}>
       {children}
     </SocketConnectionContext.Provider>
   );

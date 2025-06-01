@@ -13,7 +13,7 @@ export const GameControllerContext = createContext();
 
 export function GameControllerProvider({ children }) {
   const ws = useRef(null);
-  const wsUrl = useSocketConnection();
+  const { wsUrl } = useSocketConnection();
   const { tokens, setTokens } = useTokens();
   const { userId, setUserId, size, setLockedIn } = useCurrentUser();
   const [photos, setPhotos] = useState({});

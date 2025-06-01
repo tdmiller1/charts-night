@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useCurrentUser } from './Contexts/CurrentUserContext';
 import { useGameController } from './Contexts/GameControllerProvider';
 import { useTokens } from './Contexts/TokensContext';
+import { useSocketConnection } from './SocketConnection';
 
 export default function Header() {
   const { lockedIn } = useCurrentUser();
   const { resetUsersLockedIn, toggleLockedIn } = useGameController();
+  const { wsUrl } = useSocketConnection();
   const { tokens } = useTokens();
   const [countdown, setCountdown] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
@@ -33,19 +35,38 @@ export default function Header() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
+  console.log(wsUrl);
+
   return (
-    <>
-      <div>Game Master</div>
-      <div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+      }}
+    >
+      <div>Charts!</div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <button onClick={toggleLockedIn}>
-          {lockedIn ? 'Unlock Please' : 'Lock In'}
+          {lockedIn ? 'Make changes...' : 'Lock In'}
         </button>
+        {countdown !== null && !showAlert && (
+          <div style={{ fontWeight: 'bold', color: 'red' }}>
+            Starting in: {countdown}
+          </div>
+        )}
       </div>
-      {countdown !== null && !showAlert && (
-        <div style={{ fontWeight: 'bold', color: 'red' }}>
-          Starting in: {countdown}
-        </div>
-      )}
+      <p>Server: {wsUrl}</p>
+
       {showAlert && (
         <div
           style={{
@@ -75,6 +96,6 @@ export default function Header() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
