@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import { useEffect, useRef } from 'react';
 import { useTokens } from './TokensContext';
 import { useCurrentUser } from './CurrentUserContext';
+import { useSocketConnection } from '../SocketConnection';
 
 function getRandomColor() {
   const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
@@ -12,6 +13,7 @@ export const GameControllerContext = createContext();
 
 export function GameControllerProvider({ children }) {
   const ws = useRef(null);
+  const wsUrl = useSocketConnection();
   const { tokens, setTokens } = useTokens();
   const { userId, setUserId, size, setLockedIn } = useCurrentUser();
   const [photos, setPhotos] = useState({});
@@ -25,7 +27,7 @@ export function GameControllerProvider({ children }) {
 
   // Connect to WebSocket server
   useEffect(() => {
-    ws.current = new WebSocket('ws://localhost:3001');
+    ws.current = new WebSocket(wsUrl);
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'init') {
