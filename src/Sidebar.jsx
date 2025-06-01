@@ -2,7 +2,8 @@ import { useTokens, useGameController } from './Contexts/hooks';
 
 export default function Sidebar() {
   const { tokens } = useTokens();
-  const { userAddPhoto, gameState } = useGameController();
+  const { userAddPhoto, gameState, userSelectPhotoPreset } =
+    useGameController();
 
   // Allows the user to select a photo from their computer
   // it will then call gamecontroller userAddPhoto with the file
@@ -18,6 +19,10 @@ export default function Sidebar() {
       }
     };
     input.click();
+  }
+
+  function handlePhotoPreset(preset) {
+    userSelectPhotoPreset(preset);
   }
 
   // Simple lock/unlock icons as SVGs
@@ -115,51 +120,73 @@ export default function Sidebar() {
     <div
       style={{
         width: '100%',
+        height: '100%',
         overflow: 'auto',
         wordWrap: 'break-word',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'space-between',
       }}
     >
-      <h4>Players</h4>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {Object.values(tokens).map((token) => {
-          const useBlack = isColorTooLight(token.color);
+      <div>
+        <h4>Players</h4>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {Object.values(tokens).map((token) => {
+            const useBlack = isColorTooLight(token.color);
 
-          function truncateLabel(l) {
-            if (!l) return 'Unknown';
-            if (l.length > 15) {
-              return l.slice(0, 15) + '... ';
+            function truncateLabel(l) {
+              if (!l) return 'Unknown';
+              if (l.length > 15) {
+                return l.slice(0, 15) + '... ';
+              }
+              return l;
             }
-            return l;
-          }
 
-          const label = truncateLabel(token?.label || token.userId);
-          return (
-            <li
-              key={token.userId}
-              style={{
-                backgroundColor: token.color,
-                color: useBlack ? '#000' : '#fff',
-                padding: '8px 12px',
-                marginBottom: 6,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <span style={{ flex: 1 }}>
-                {label}
-                {/* : ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
+            const label = truncateLabel(token?.label || token.userId);
+            return (
+              <li
+                key={token.userId}
+                style={{
+                  backgroundColor: token.color,
+                  color: useBlack ? '#000' : '#fff',
+                  padding: '8px 12px',
+                  marginBottom: 6,
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ flex: 1 }}>
+                  {label}
+                  {/* : ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
                 {Math.floor(fromNormalized(token.y, token.y).y)}) */}
-              </span>
-              {isFFA ? token.lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
-            </li>
-          );
-        })}
-      </ul>
-      <button onClick={handleAddPhoto}>Add Photo</button>
+                </span>
+                {isFFA ? token.lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
+              </li>
+            );
+          })}
+        </ul>
+        <button onClick={handleAddPhoto}>Add Photo</button>
+      </div>
+      {/* Use a select dropdown */}
+      <div style={{ marginTop: 10 }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handlePhotoPreset(e.target.elements[0].value);
+          }}
+        >
+          <h4>Presets</h4>
+          <select style={{ width: 150, fontSize: 16 }} name="preset">
+            <option value="fish">Fish</option>
+            <option value="friends">Friends</option>
+          </select>
+          <button style={{ marginTop: 16 }} type="submit">
+            Add preset photos
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

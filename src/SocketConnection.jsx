@@ -3,10 +3,7 @@ import { SocketConnectionContext } from './Contexts/contexts';
 
 export default function SocketConnection({ children }) {
   // if dev environment set wsUrl to localhost
-  const [wsUrl, setWsUrl] = useState(
-    // process.env.NODE_ENV === 'development' ? 'ws://localhost:3001' : ''
-    ''
-  );
+  const [wsUrl, setWsUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('ws://localhost:3001');
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
@@ -151,7 +148,7 @@ export default function SocketConnection({ children }) {
             minWidth: 300,
           }}
         >
-          <label for="hostUrl">Server url</label>
+          <label htmlFor="hostUrl">Server url</label>
           <input
             type="text"
             name="hostUrl"
@@ -162,7 +159,7 @@ export default function SocketConnection({ children }) {
             required
             disabled={connecting}
           />
-          <label for="password">Password</label>
+          <label htmlFor="password">Password</label>
           <input
             type="password"
             value={password}
@@ -173,7 +170,7 @@ export default function SocketConnection({ children }) {
             required
             disabled={connecting}
           />
-          <label for="nickname">Nickname</label>
+          <label htmlFor="nickname">Nickname</label>
           <input
             label="Nickname"
             type="nickname"

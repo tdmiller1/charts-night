@@ -175,6 +175,15 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function userSelectPhotoPreset(preset) {
+    ws.current.send(
+      JSON.stringify({
+        type: 'photoPreset',
+        preset: preset,
+      })
+    );
+  }
+
   return (
     <GameControllerContext.Provider
       value={{
@@ -185,6 +194,7 @@ export function GameControllerProvider({ children }) {
         userRemovePhoto,
         resetUsersLockedIn,
         userChangeGameMode,
+        userSelectPhotoPreset,
         gameState,
       }}
     >

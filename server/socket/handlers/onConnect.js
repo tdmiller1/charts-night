@@ -3,6 +3,7 @@ import { WebSocket as WS } from 'ws';
 import { handleAuth } from '../../services/usersService.js';
 import { gameRoom, tokens, photos } from '../../index.js';
 import { handleTokenMovement } from '../../services/tokenService.js';
+import { handlePhotoPreset } from '../../services/gameService.js';
 
 const PINGPONGTIMEOUT = 15000; // 15 seconds
 
@@ -73,6 +74,11 @@ export default function onConnect(ws, wss) {
         }
       });
     }
+
+    if (data.type === 'photoPreset') {
+      handlePhotoPreset(ws, data);
+    }
+
     if (data.type === 'addPhoto' && data.photo) {
       console.log(`User ${ws.userId} added a photo`);
       // Store the photo for this user
