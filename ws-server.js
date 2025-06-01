@@ -1,8 +1,10 @@
+import 'dotenv/config';
 import { WebSocketServer, WebSocket as WS } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 
 // Use environment variable for port, default to 3001
 const PORT = process.env.PORT || 3001;
+const PASSPHRASE = process.env.PASSPHRASE;
 
 // Simple WebSocket server for multi-user token sync
 const wss = new WebSocketServer({ port: PORT });
@@ -95,6 +97,21 @@ wss.on('connection', (ws) => {
           client.send(JSON.stringify({ type: 'lockReset', tokens }));
         }
       });
+    }
+
+    if (data.type === 'auth' && data.password) {
+      // Handle authentication
+      if (data.password === PASSPHRASE) {
+        console.log(`User ${userId} authenticated successfully`);
+        ws.send(JSON.stringify({ type: 'authSuccess', userId }));
+      } else {
+        console.log(`User ${userId} authenticated failed`);
+        ws.send(
+          JSON.stringify({ type: 'authError', message: 'Invalid password' })
+        );
+        ws.close();
+        return;
+      }
     }
   });
 

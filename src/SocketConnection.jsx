@@ -8,13 +8,13 @@ export default function SocketConnection({ children }) {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
   const [connectionError, setConnectionError] = useState('');
+  const [password, setPassword] = useState('');
   const wsRef = useRef(null);
 
   const handleConnect = (e) => {
     e.preventDefault();
     setConnecting(true);
     setError('');
-    // Try to open a WebSocket connection to test if the server is up
     let ws;
     try {
       ws = new window.WebSocket(inputUrl);
@@ -24,22 +24,35 @@ export default function SocketConnection({ children }) {
       return;
     }
     let didRespond = false;
-    const timeout = setTimeout(() => {
-      if (!didRespond) {
-        ws.close();
-        setError('Connection timed out. Is the server running?');
-        setConnecting(false);
-      }
-    }, 2000); // 2 seconds timeout
+    let authTimeout;
     ws.onopen = () => {
-      didRespond = true;
-      clearTimeout(timeout);
-      ws.close();
-      setWsUrl(inputUrl);
-      setConnecting(false);
+      ws.send(JSON.stringify({ type: 'auth', password }));
+      // Wait for auth response from server
+      authTimeout = setTimeout(() => {
+        ws.close();
+        setError('Authentication timed out.');
+        setConnecting(false);
+      }, 3000); // 3 seconds for auth response
+    };
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'authSuccess') {
+          clearTimeout(authTimeout);
+          if (data.userId) {
+            ws.close();
+            setWsUrl(inputUrl);
+            setConnecting(false);
+          } else {
+            ws.close();
+            setError('Authentication failed.');
+            setConnecting(false);
+          }
+        }
+      } catch {}
     };
     ws.onerror = () => {
-      clearTimeout(timeout);
+      clearTimeout(authTimeout);
       setError('Could not connect to server.');
       setConnecting(false);
     };
@@ -115,6 +128,15 @@ export default function SocketConnection({ children }) {
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
             placeholder="ws://localhost:3001"
+            style={{ padding: '0.5rem', fontSize: '1rem' }}
+            required
+            disabled={connecting}
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Secret Password"
             style={{ padding: '0.5rem', fontSize: '1rem' }}
             required
             disabled={connecting}
