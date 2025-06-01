@@ -14,7 +14,7 @@ function getRandomColor() {
 export default function ChartWithTokens() {
   const { tokens } = useTokens();
   const { userId, size, setSize, lockedIn } = useCurrentUser();
-  const { userHandleMouseMove, userLockingIn } = useGameController();
+  const { userHandleMouseMove } = useGameController();
 
   // Track client container size
   const containerRef = useRef(null);
@@ -82,14 +82,6 @@ export default function ChartWithTokens() {
   };
 
   const handleMouseUp = () => setDragging(false);
-
-  useEffect(() => {
-    if (!tokens[userId]) return;
-    const newToken = tokens[userId];
-    newToken.lockedIn = !lockedIn;
-
-    userLockingIn({ newToken });
-  }, [lockedIn]);
 
   return (
     <div

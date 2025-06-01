@@ -13,7 +13,7 @@ export const GameControllerContext = createContext();
 export function GameControllerProvider({ children }) {
   const ws = useRef(null);
   const { tokens, setTokens } = useTokens();
-  const { userId, setUserId, size, lockedIn } = useCurrentUser();
+  const { userId, setUserId, size, setLockedIn } = useCurrentUser();
   const [photos, setPhotos] = useState({});
 
   function toNormalized(x, y) {
@@ -34,6 +34,15 @@ export function GameControllerProvider({ children }) {
         setPhotos(data.photos || {});
       } else if (data.type === 'tokens') {
         setTokens(data.tokens || {});
+      } else if (data.type === 'lockReset') {
+        // Reset all users' lockedIn state
+        Object.keys(data.tokens).forEach((id) => {
+          if (tokens[id]) {
+            tokens[id].lockedIn = false;
+          }
+        });
+        setTokens({ ...tokens });
+        setLockedIn(false);
       } else if (data.type === 'photos') {
         setPhotos({ ...data.photos });
       }
@@ -67,12 +76,20 @@ export function GameControllerProvider({ children }) {
     );
   }
 
-  function userLockingIn({ newToken }) {
+  function toggleLockedIn() {
+    console.log('Toggling lockedIn for userId:', userId);
+    if (!tokens[userId]) {
+      console.warn('No token found for userId:', userId);
+      return;
+    }
+    const newToken = { ...tokens[userId] };
+    newToken.lockedIn = !newToken.lockedIn;
+    setLockedIn(newToken.lockedIn);
     ws.current.send(
       JSON.stringify({
         type: 'lockedIn',
         token: newToken,
-        lockedIn: lockedIn,
+        lockedIn: newToken.lockedIn,
       })
     );
   }
@@ -105,14 +122,23 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function resetUsersLockedIn() {
+    ws.current.send(
+      JSON.stringify({
+        type: 'resetLockedIn',
+      })
+    );
+  }
+
   return (
     <GameControllerContext.Provider
       value={{
         photos,
         userHandleMouseMove,
-        userLockingIn,
+        toggleLockedIn,
         userAddPhoto,
         userRemovePhoto,
+        resetUsersLockedIn,
       }}
     >
       {children}

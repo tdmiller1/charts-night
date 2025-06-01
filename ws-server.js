@@ -36,9 +36,14 @@ wss.on('connection', (ws) => {
         }
       });
     }
-    if (data.type === 'lockedIn') {
+    if (
+      data.type === 'lockedIn' &&
+      data.token &&
+      typeof data.lockedIn === 'boolean'
+    ) {
       // Update lockedIn state for this user
       if (tokens[userId]) {
+        console.log(`User ${userId} locked in: ${data.lockedIn}`);
         tokens[userId].lockedIn = data.lockedIn;
       }
       // Broadcast updated tokens
@@ -73,6 +78,18 @@ wss.on('connection', (ws) => {
       wss.clients.forEach((client) => {
         if (client.readyState === WS.OPEN) {
           client.send(JSON.stringify({ type: 'photos', photos }));
+        }
+      });
+    }
+    if (data.type === 'resetLockedIn') {
+      // Reset all users' lockedIn state
+      Object.keys(tokens).forEach((id) => {
+        tokens[id].lockedIn = false;
+      });
+      // Broadcast updated tokens
+      wss.clients.forEach((client) => {
+        if (client.readyState === WS.OPEN) {
+          client.send(JSON.stringify({ type: 'lockReset', tokens }));
         }
       });
     }
