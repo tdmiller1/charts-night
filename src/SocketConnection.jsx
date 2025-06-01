@@ -73,8 +73,10 @@ export default function SocketConnection({ children }) {
           setConnectionError('Lost connection to server.');
           setWsUrl('');
           cleanup();
+          return;
         }
-        // Set a timeout for pong (optional, if server supports pong)
+        // Clear any previous pong timeout before setting a new one
+        if (timeout) clearTimeout(timeout);
         timeout = setTimeout(() => {
           setConnectionError('Server did not respond to ping.');
           setWsUrl('');
