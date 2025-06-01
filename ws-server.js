@@ -1,8 +1,11 @@
 import { WebSocketServer, WebSocket as WS } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 
+// Use environment variable for port, default to 3001
+const PORT = process.env.PORT || 3001;
+
 // Simple WebSocket server for multi-user token sync
-const wss = new WebSocketServer({ port: 3001 });
+const wss = new WebSocketServer({ port: PORT });
 
 // Store tokens by userId
 let tokens = {};
@@ -106,4 +109,8 @@ wss.on('connection', (ws) => {
   });
 });
 
-console.log('WebSocket server running on ws://localhost:3001');
+// Improved log message for Docker port mapping
+console.log(`WebSocket server running inside container on port ${PORT}`);
+console.log(
+  'If running in Docker, connect using the host port you mapped with -p.'
+);
