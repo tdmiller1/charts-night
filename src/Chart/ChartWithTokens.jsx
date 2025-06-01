@@ -2,19 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import '../App.css';
 import Chart from './chart';
 import { UserToken } from './UserToken';
-import { useTokens } from '../Contexts/TokensContext';
-import { useCurrentUser } from '../Contexts/CurrentUserContext';
-import { useGameController } from '../Contexts/GameControllerProvider';
-
-function getRandomColor() {
-  const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
+import {
+  useTokens,
+  useGameController,
+  useCurrentUser,
+} from '../Contexts/hooks';
 
 export default function ChartWithTokens() {
   const { tokens } = useTokens();
   const { userId, size, setSize, lockedIn } = useCurrentUser();
-  const { userHandleMouseMove } = useGameController();
+  const { userHandleMouseMove, gameState } = useGameController();
+
+  const isFFA = gameState.mode === 'ffa';
 
   // Track client container size
   const containerRef = useRef(null);
@@ -31,7 +30,7 @@ export default function ChartWithTokens() {
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  }, [setSize]);
 
   // Each user gets a unique color and label
   // const ws = useRef(null);
@@ -55,12 +54,12 @@ export default function ChartWithTokens() {
   }
 
   // Drag logic for this user's token
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e, token) => {
     if (lockedIn) return;
-    setDragging(true);
-    const myToken = tokens[userId];
+    setDragging(token);
+    // const myToken = tokens[userId];
     // Convert normalized to px for offset
-    const { x, y } = fromNormalized(myToken.x, myToken.y);
+    const { x, y } = fromNormalized(token.x, token.y);
     setOffset({
       x: e.clientX - x,
       y: e.clientY - y,
@@ -68,11 +67,11 @@ export default function ChartWithTokens() {
   };
 
   const handleMouseMove = (e) => {
-    if (dragging && userId && tokens[userId]) {
+    if (dragging && userId) {
       // Convert mouse px to normalized for server
       const { x, y } = toNormalized(e.clientX - offset.x, e.clientY - offset.y);
       const newToken = {
-        ...tokens[userId],
+        ...dragging,
         x,
         y,
       };
@@ -81,7 +80,9 @@ export default function ChartWithTokens() {
     }
   };
 
-  const handleMouseUp = () => setDragging(false);
+  const handleMouseUp = () => setDragging(null);
+
+  const disableDragging = !isFFA && gameState.host !== userId;
 
   return (
     <div
@@ -107,17 +108,32 @@ export default function ChartWithTokens() {
         // Convert normalized to px for rendering
         const { x, y } = fromNormalized(token.x, token.y);
 
+        const canUserDragForFFA = isFFA && token.userId === userId;
+        const canUserDragForGod = !isFFA && gameState.host === userId;
+
+        function truncateLabel(l) {
+          if (!l) return 'Unknown';
+          if (l.length > 4) {
+            return l.slice(0, 4);
+          }
+          return l;
+        }
+
+        const label = truncateLabel(token?.label || token.userId);
+
         return (
           <UserToken
+            disableDragging={!canUserDragForFFA && !canUserDragForGod}
             key={token.userId}
             x={x}
             y={y}
             color={token.color}
-            label={token.userId !== userId ? token.label : 'You'}
-            onMouseDown={token.userId === userId ? handleMouseDown : undefined}
+            label={token.userId !== userId ? label : 'You'}
+            onMouseDown={(e) =>
+              !disableDragging ? handleMouseDown(e, token) : undefined
+            }
             lockedIn={lockedIn}
             dragging={dragging}
-            notMe={token.userId !== userId}
           />
         );
       })}

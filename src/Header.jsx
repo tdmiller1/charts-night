@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useCurrentUser } from './Contexts/CurrentUserContext';
-import { useGameController } from './Contexts/GameControllerProvider';
-import { useTokens } from './Contexts/TokensContext';
-import { useSocketConnection } from './SocketConnection';
+import { useState, useRef, useEffect } from 'react';
+import { useCurrentUser } from './Contexts/hooks';
+import { useTokens, useGameController } from './Contexts/hooks';
+import { useSocketConnection } from './Contexts/hooks';
 
 export default function Header() {
-  const { lockedIn } = useCurrentUser();
-  const { resetUsersLockedIn, toggleLockedIn } = useGameController();
+  const { lockedIn, userId } = useCurrentUser();
+  const { resetUsersLockedIn, toggleLockedIn, gameState, userChangeGameMode } =
+    useGameController();
   const { wsUrl } = useSocketConnection();
   const { tokens } = useTokens();
   const [countdown, setCountdown] = useState(null);
@@ -35,7 +35,8 @@ export default function Header() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  console.log(wsUrl);
+  const isHost = gameState.host === userId;
+  const isFFA = gameState.mode === 'ffa';
 
   return (
     <div
@@ -56,15 +57,45 @@ export default function Header() {
           alignItems: 'center',
         }}
       >
-        <button onClick={toggleLockedIn}>
-          {lockedIn ? 'Make changes...' : 'Lock In'}
-        </button>
+        {isHost && 'host'}
+        {isFFA && (
+          <button onClick={toggleLockedIn}>
+            {lockedIn ? 'Make changes...' : 'Lock In'}
+          </button>
+        )}
         {countdown !== null && !showAlert && (
           <div style={{ fontWeight: 'bold', color: 'red' }}>
             Starting in: {countdown}
           </div>
         )}
       </div>
+      {/* Radio button group for game mode selection */}
+      {isHost && (
+        <div>
+          <label>
+            <input
+              type="radio"
+              name="gameMode"
+              value="ffa"
+              checked={gameState.mode === 'ffa'}
+              onChange={() => userChangeGameMode('ffa')}
+            />
+            Free for All
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="gameMode"
+              value="god"
+              checked={gameState.mode === 'god'}
+              onChange={() => {
+                userChangeGameMode('god');
+              }}
+            />
+            God Mode
+          </label>
+        </div>
+      )}
       <p>Server: {wsUrl}</p>
 
       {showAlert && (

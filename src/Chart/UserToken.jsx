@@ -6,9 +6,8 @@ export function UserToken({
   onMouseDown,
   color = '#61dafb',
   label,
-  lockedIn,
   dragging,
-  notMe,
+  disableDragging,
 }) {
   return (
     <>
@@ -31,8 +30,11 @@ export function UserToken({
           color: '#222',
           fontWeight: 'bold',
           userSelect: 'none',
-          cursor:
-            lockedIn || notMe ? 'not-allowed' : dragging ? 'grabbing' : 'grab',
+          cursor: disableDragging
+            ? 'not-allowed'
+            : dragging
+              ? 'grabbing'
+              : 'grab',
         }}
         onMouseDown={onMouseDown}
       >
@@ -41,8 +43,8 @@ export function UserToken({
       <div
         style={{
           position: 'absolute',
-          left: x + 30,
-          top: y - 10,
+          left: x - 37,
+          top: y + 30,
           color: '#fff',
           background: 'rgba(0,0,0,0.7)',
           padding: '2px 8px',

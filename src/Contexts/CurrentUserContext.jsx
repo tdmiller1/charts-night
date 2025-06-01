@@ -1,9 +1,5 @@
-import { createContext, useContext, useState } from 'react';
-import { useTokens } from './TokensContext';
-import { useGameController } from './GameControllerProvider';
-
-// Context for current user state
-export const CurrentUserContext = createContext();
+import { useState } from 'react';
+import { CurrentUserContext } from './contexts';
 
 export function CurrentUserProvider({ children }) {
   const [userId, setUserId] = useState(null);
@@ -17,9 +13,4 @@ export function CurrentUserProvider({ children }) {
       {children}
     </CurrentUserContext.Provider>
   );
-}
-
-// Custom hook for easy access
-export function useCurrentUser() {
-  return useContext(CurrentUserContext);
 }

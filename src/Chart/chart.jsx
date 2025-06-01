@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useGameController } from '../Contexts/GameControllerProvider';
+import { useGameController } from '../Contexts/hooks';
 
-export default function Chart({ width = 1000, height = 1000, staticMode }) {
+export default function Chart({ width = 1000, height = 1000 }) {
   const { photos, userRemovePhoto } = useGameController();
   const [count, setCount] = useState(Object.entries(photos).length);
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -11,9 +11,6 @@ export default function Chart({ width = 1000, height = 1000, staticMode }) {
       setCount(Object.entries(photos).length);
     }
   }, [photos]);
-
-  // Example image URL (replace with your own if needed)
-  const imageUrl = '/src/assets/darcy.jpg';
 
   // Calculate points in a circle
   const points = Array.from({ length: count }, (_, idx) => {

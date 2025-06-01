@@ -1,9 +1,12 @@
-import { useState, useEffect, useContext, createContext, useRef } from 'react';
-
-export const SocketConnectionContext = createContext();
+import { useState, useRef } from 'react';
+import { SocketConnectionContext } from './Contexts/contexts';
 
 export default function SocketConnection({ children }) {
-  const [wsUrl, setWsUrl] = useState('');
+  // if dev environment set wsUrl to localhost
+  const [wsUrl, setWsUrl] = useState(
+    // process.env.NODE_ENV === 'development' ? 'ws://localhost:3001' : ''
+    ''
+  );
   const [inputUrl, setInputUrl] = useState('ws://localhost:3001');
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
@@ -11,8 +14,7 @@ export default function SocketConnection({ children }) {
   const [password, setPassword] = useState('');
   const wsRef = useRef(null);
 
-  const handleConnect = (e) => {
-    e.preventDefault();
+  const handleConnect = (pwd, nn = '') => {
     setConnecting(true);
     setError('');
     let ws;
@@ -20,13 +22,17 @@ export default function SocketConnection({ children }) {
       ws = new window.WebSocket(inputUrl);
     } catch (err) {
       setError('Invalid WebSocket URL.');
+      console.error('WebSocket connection error:', err);
       setConnecting(false);
       return;
     }
-    let didRespond = false;
+    console.log(ws);
     let authTimeout;
+    wsRef.current = ws; // Store the WebSocket connection
+    console.log('storing wsRef', wsRef);
+
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'auth', password }));
+      ws.send(JSON.stringify({ type: 'auth', password: pwd, nickname: nn }));
       // Wait for auth response from server
       authTimeout = setTimeout(() => {
         ws.close();
@@ -34,13 +40,15 @@ export default function SocketConnection({ children }) {
         setConnecting(false);
       }, 3000); // 3 seconds for auth response
     };
+
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'authSuccess') {
           clearTimeout(authTimeout);
           if (data.userId) {
-            ws.close();
+            // ws.close();
+            wsRef.current = ws; // Store the WebSocket connection
             setWsUrl(inputUrl);
             setConnecting(false);
           } else {
@@ -49,8 +57,25 @@ export default function SocketConnection({ children }) {
             setConnecting(false);
           }
         }
-      } catch {}
+      } catch (e) {
+        console.error('Error parsing WebSocket message:', e);
+        setError('Invalid message format from server.');
+        ws.close();
+        setConnecting(false);
+      }
     };
+
+    // Setup mechanism to detect if we lose connection
+    ws.onclose = () => {
+      clearTimeout(authTimeout);
+      if (wsRef.current === ws) {
+        wsRef.current = null; // Clear the reference on close
+      }
+      setConnectionError('Lost connection to server.');
+      setWsUrl('');
+      setConnecting(false);
+    };
+
     ws.onerror = () => {
       clearTimeout(authTimeout);
       setError('Could not connect to server.');
@@ -59,47 +84,47 @@ export default function SocketConnection({ children }) {
   };
 
   // Monitor connection after login
-  useEffect(() => {
-    if (!wsUrl) return;
-    let ws;
-    let interval;
-    let timeout;
-    let closed = false;
+  // useEffect(() => {
+  //   if (!wsUrl) return;
+  //   let ws;
+  //   let interval;
+  //   let timeout;
+  //   let closed = false;
 
-    function cleanup() {
-      if (interval) clearInterval(interval);
-      if (timeout) clearTimeout(timeout);
-      if (ws) ws.close();
-    }
+  //   function cleanup() {
+  //     if (interval) clearInterval(interval);
+  //     if (timeout) clearTimeout(timeout);
+  //     if (ws) ws.close();
+  //   }
 
-    ws = new window.WebSocket(wsUrl);
-    wsRef.current = ws;
-    ws.onmessage = (event) => {
-      // If server responds to ping, clear pong timeout
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'pong' && timeout) {
-          clearTimeout(timeout);
-        }
-      } catch {}
-    };
-    ws.onerror = () => {
-      setConnectionError('Lost connection to server.');
-      setWsUrl('');
-      cleanup();
-    };
-    ws.onclose = () => {
-      if (!closed) {
-        setConnectionError('Lost connection to server.');
-        setWsUrl('');
-        cleanup();
-      }
-    };
-    return () => {
-      closed = true;
-      cleanup();
-    };
-  }, [wsUrl]);
+  //   ws = new window.WebSocket(wsUrl);
+  //   wsRef.current = ws;
+  //   ws.onmessage = (event) => {
+  //     // If server responds to ping, clear pong timeout
+  //     try {
+  //       const data = JSON.parse(event.data);
+  //       if (data.type === 'pong' && timeout) {
+  //         clearTimeout(timeout);
+  //       }
+  //     } catch {}
+  //   };
+  //   ws.onerror = () => {
+  //     setConnectionError('Lost connection to server.');
+  //     setWsUrl('');
+  //     cleanup();
+  //   };
+  //   ws.onclose = () => {
+  //     if (!closed) {
+  //       setConnectionError('Lost connection to server.');
+  //       setWsUrl('');
+  //       cleanup();
+  //     }
+  //   };
+  //   return () => {
+  //     closed = true;
+  //     cleanup();
+  //   };
+  // }, [wsUrl]);
 
   if (!wsUrl) {
     return (
@@ -115,7 +140,10 @@ export default function SocketConnection({ children }) {
       >
         <h2>Connect to WebSocket Server</h2>
         <form
-          onSubmit={handleConnect}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleConnect(e.target.password.value, e.target.nickname.value);
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -123,8 +151,10 @@ export default function SocketConnection({ children }) {
             minWidth: 300,
           }}
         >
+          <label for="hostUrl">Server url</label>
           <input
             type="text"
+            name="hostUrl"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
             placeholder="ws://localhost:3001"
@@ -132,14 +162,23 @@ export default function SocketConnection({ children }) {
             required
             disabled={connecting}
           />
+          <label for="password">Password</label>
           <input
             type="password"
             value={password}
+            name="password"
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Secret Password"
             style={{ padding: '0.5rem', fontSize: '1rem' }}
             required
             disabled={connecting}
+          />
+          <label for="nickname">Nickname</label>
+          <input
+            label="Nickname"
+            type="nickname"
+            name="nickname"
+            style={{ padding: '0.5rem', fontSize: '1rem' }}
           />
           <button
             type="submit"
@@ -159,13 +198,8 @@ export default function SocketConnection({ children }) {
   }
 
   return (
-    <SocketConnectionContext.Provider value={{ wsUrl }}>
+    <SocketConnectionContext.Provider value={{ wsUrl, wsConnection: wsRef }}>
       {children}
     </SocketConnectionContext.Provider>
   );
-}
-
-// Custom hook for easy access
-export function useSocketConnection() {
-  return useContext(SocketConnectionContext);
 }
