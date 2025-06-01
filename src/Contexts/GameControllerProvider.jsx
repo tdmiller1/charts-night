@@ -4,11 +4,6 @@ import { useTokens, useSocketConnection } from './hooks';
 import { useCurrentUser } from './hooks';
 import { GameControllerContext } from './contexts';
 
-function getRandomColor() {
-  const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
 export function GameControllerProvider({ children }) {
   const ws = useRef(null);
   const { wsConnection } = useSocketConnection();
@@ -62,7 +57,7 @@ export function GameControllerProvider({ children }) {
     };
   }, [setLockedIn, setTokens, setUserId, tokens, wsConnection]);
 
-  // On first connect, create a token for this user if not present
+  // On first connect, set token into x,y
   useEffect(() => {
     function toNormalized(x, y) {
       return {
@@ -72,9 +67,15 @@ export function GameControllerProvider({ children }) {
     }
 
     if (!size) return;
-    if (userId && tokens[userId].label === undefined) {
-      const color = getRandomColor();
-      const label = userId.slice(0, 2).toUpperCase();
+    if (
+      userId &&
+      tokens[userId].x === undefined &&
+      tokens[userId].y === undefined
+    ) {
+      const color =
+        tokens[userId].color ||
+        `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+      const label = tokens[userId].nickname || userId;
       // Always send normalized coordinates to server
       const token = {
         ...toNormalized(Math.random() * 500 + 200, 200),
@@ -160,6 +161,15 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function userChangeGameMode(mode) {
+    ws.current.send(
+      JSON.stringify({
+        type: 'gameMode',
+        mode: mode,
+      })
+    );
+  }
+
   return (
     <GameControllerContext.Provider
       value={{
@@ -169,6 +179,7 @@ export function GameControllerProvider({ children }) {
         userAddPhoto,
         userRemovePhoto,
         resetUsersLockedIn,
+        userChangeGameMode,
         gameState,
       }}
     >

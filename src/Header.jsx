@@ -5,7 +5,8 @@ import { useSocketConnection } from './Contexts/hooks';
 
 export default function Header() {
   const { lockedIn, userId } = useCurrentUser();
-  const { resetUsersLockedIn, toggleLockedIn, gameState } = useGameController();
+  const { resetUsersLockedIn, toggleLockedIn, gameState, userChangeGameMode } =
+    useGameController();
   const { wsUrl } = useSocketConnection();
   const { tokens } = useTokens();
   const [countdown, setCountdown] = useState(null);
@@ -34,6 +35,9 @@ export default function Header() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
+  const isHost = gameState.host === userId;
+  const isFFA = gameState.mode === 'ffa';
+
   return (
     <div
       style={{
@@ -53,16 +57,43 @@ export default function Header() {
           alignItems: 'center',
         }}
       >
-        {gameState.host === userId && 'host'}
-        <button onClick={toggleLockedIn}>
-          {lockedIn ? 'Make changes...' : 'Lock In'}
-        </button>
+        {isHost && 'host'}
+        {isFFA && (
+          <button onClick={toggleLockedIn}>
+            {lockedIn ? 'Make changes...' : 'Lock In'}
+          </button>
+        )}
         {countdown !== null && !showAlert && (
           <div style={{ fontWeight: 'bold', color: 'red' }}>
             Starting in: {countdown}
           </div>
         )}
       </div>
+      {/* Radio button group for game mode selection */}
+      {isHost && (
+        <div>
+          <label>
+            <input
+              type="radio"
+              name="gameMode"
+              value="ffa"
+              checked={gameState.mode === 'ffa'}
+              onChange={() => userChangeGameMode('ffa')}
+            />
+            Free for All
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="gameMode"
+              value="god"
+              checked={gameState.mode === 'god'}
+              onChange={() => userChangeGameMode('god')}
+            />
+            God Mode
+          </label>
+        </div>
+      )}
       <p>Server: {wsUrl}</p>
 
       {showAlert && (

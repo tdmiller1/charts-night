@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { WebSocket as WS } from 'ws';
 import { handleAuth } from '../../services/usersService.js';
 import { gameRoom, tokens, photos } from '../../index.js';
+import { handleTokenMovement } from '../../services/tokenService.js';
 
 const PINGPONGTIMEOUT = 15000; // 15 seconds
 
@@ -52,14 +53,9 @@ export default function onConnect(ws, wss) {
     }
 
     if (data.type === 'move' && data.token) {
-      tokens[ws.userId] = { ...data.token, userId: ws.userId };
-      // Broadcast to all clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'tokens', tokens }));
-        }
-      });
+      handleTokenMovement(data.token, ws.userId, wss);
     }
+
     if (
       data.type === 'lockedIn' &&
       data.token &&
@@ -124,10 +120,27 @@ export default function onConnect(ws, wss) {
 
     if (data.type === 'gameRoom' && data.room) {
       // Update game room state
-      Object.keys(gameRoom).forEach((key) => delete gameRoom[key]);
       Object.assign(gameRoom, data.room);
       console.log(`Game room updated by user ${ws.userId}:`, gameRoom);
       // Broadcast updated game room to all clients
+      wss.clients.forEach((client) => {
+        if (client.readyState === WS.OPEN) {
+          client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
+        }
+      });
+    }
+
+    if (data.type === 'gameMode' && data.mode) {
+      if (!gameRoom.host || gameRoom.host !== ws.userId) {
+        console.warn(
+          `User ${ws.userId} attempted to change game mode but is not the host.`
+        );
+        return; // Only the host can change the game mode
+      }
+      // Update game mode
+      gameRoom.mode = data.mode;
+      console.log(`Game mode updated by user ${ws.userId}:`, gameRoom.mode);
+      // Broadcast updated game mode to all clients
       wss.clients.forEach((client) => {
         if (client.readyState === WS.OPEN) {
           client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
@@ -154,7 +167,8 @@ export default function onConnect(ws, wss) {
       } else {
         // No remaining clients, reset the game room
         console.log('No remaining clients, resetting game room');
-        Object.keys(gameRoom).forEach((key) => delete gameRoom[key]);
+        delete gameRoom.host;
+        gameRoom.mode = 'ffa'; // Reset to default mode
       }
       // Broadcast reset to all clients
       wss.clients.forEach((client) => {

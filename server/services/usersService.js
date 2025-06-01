@@ -8,11 +8,22 @@ const PASSPHRASE = process.env.PASSPHRASE;
 
 export function handleAuth(ws, data) {
   // Handle authentication
-  console.log(PASSPHRASE);
   if (data.password === PASSPHRASE) {
     console.log('testing userId', ws.userId);
-    console.log(`User ${ws.userId} authenticated successfully`);
-    tokens[ws.userId] = {};
+    console.log(
+      `User ${ws.userId}, Nickname: ${data.nickname} authenticated successfully`
+    );
+    // Set nickname
+    tokens[ws.userId] = { nickname: data.nickname };
+
+    // Set token color
+
+    function getRandomColor() {
+      const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    tokens[ws.userId].color = getRandomColor();
     ws.send(JSON.stringify({ type: 'authSuccess', userId: ws.userId }));
 
     // wait 200ms to ensure client is ready

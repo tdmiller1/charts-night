@@ -12,7 +12,9 @@ const PORT = process.env.PORT || 3001;
 const wss = new WebSocketServer({ port: PORT });
 
 // game room state
-export let gameRoom = {}; // Deteremined by client
+export let gameRoom = {
+  mode: 'ffa', // Default game mode
+}; // Deteremined by client
 
 // Store tokens by userId
 export let tokens = {};

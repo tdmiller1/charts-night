@@ -14,8 +14,7 @@ export default function SocketConnection({ children }) {
   const [password, setPassword] = useState('');
   const wsRef = useRef(null);
 
-  const handleConnect = (e) => {
-    e.preventDefault();
+  const handleConnect = (pwd, nn = '') => {
     setConnecting(true);
     setError('');
     let ws;
@@ -33,7 +32,7 @@ export default function SocketConnection({ children }) {
     console.log('storing wsRef', wsRef);
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'auth', password }));
+      ws.send(JSON.stringify({ type: 'auth', password: pwd, nickname: nn }));
       // Wait for auth response from server
       authTimeout = setTimeout(() => {
         ws.close();
@@ -141,7 +140,10 @@ export default function SocketConnection({ children }) {
       >
         <h2>Connect to WebSocket Server</h2>
         <form
-          onSubmit={handleConnect}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleConnect(e.target.password.value, e.target.nickname.value);
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -149,8 +151,10 @@ export default function SocketConnection({ children }) {
             minWidth: 300,
           }}
         >
+          <label for="hostUrl">Server url</label>
           <input
             type="text"
+            name="hostUrl"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
             placeholder="ws://localhost:3001"
@@ -158,14 +162,23 @@ export default function SocketConnection({ children }) {
             required
             disabled={connecting}
           />
+          <label for="password">Password</label>
           <input
             type="password"
             value={password}
+            name="password"
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Secret Password"
             style={{ padding: '0.5rem', fontSize: '1rem' }}
             required
             disabled={connecting}
+          />
+          <label for="nickname">Nickname</label>
+          <input
+            label="Nickname"
+            type="nickname"
+            name="nickname"
+            style={{ padding: '0.5rem', fontSize: '1rem' }}
           />
           <button
             type="submit"
