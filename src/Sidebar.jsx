@@ -1,11 +1,10 @@
-import { useCurrentUser } from './Contexts/CurrentUserContext';
-import { useGameController } from './Contexts/GameControllerProvider';
-import { useTokens } from './Contexts/TokensContext';
+import { useCurrentUser } from './Contexts/hooks';
+import { useTokens, useGameController } from './Contexts/hooks';
 
 export default function Sidebar() {
   const { tokens } = useTokens();
   const { size } = useCurrentUser();
-  const { userAddPhoto, photos } = useGameController();
+  const { userAddPhoto } = useGameController();
 
   function fromNormalized(x, y) {
     return {
@@ -70,7 +69,7 @@ export default function Sidebar() {
       <ul>
         {Object.values(tokens).map((token) => (
           <li key={token.userId}>
-            {token.label}: ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
+            {token.userId}: ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
             {Math.floor(fromNormalized(token.y, token.y).y)}){' '}
             {token.lockedIn ? <LockIcon /> : <UnlockIcon />}
           </li>

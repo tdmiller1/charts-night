@@ -1,41 +1,52 @@
-import { createContext, useContext, useState } from 'react';
+import { useState } from 'react';
 import { useEffect, useRef } from 'react';
-import { useTokens } from './TokensContext';
-import { useCurrentUser } from './CurrentUserContext';
-import { useSocketConnection } from '../SocketConnection';
+import { useTokens, useSocketConnection } from './hooks';
+import { useCurrentUser } from './hooks';
+import { GameControllerContext } from './contexts';
 
 function getRandomColor() {
   const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-export const GameControllerContext = createContext();
-
 export function GameControllerProvider({ children }) {
   const ws = useRef(null);
-  const { wsUrl } = useSocketConnection();
+  const { wsConnection } = useSocketConnection();
   const { tokens, setTokens } = useTokens();
   const { userId, setUserId, size, setLockedIn } = useCurrentUser();
+  const [gameState, setGameState] = useState({});
   const [photos, setPhotos] = useState({});
 
-  function toNormalized(x, y) {
-    return {
-      x: (x / size.width) * 1000,
-      y: (y / size.height) * 1000,
-    };
-  }
+  // useEffect(() => {
+  //   if (!wsConnection.current) {
+  //     console.error('WebSocket connection is not established');
+  //     return;
+  //   }
+  //   ws.current = wsConnection.current;
+  //   console.log('WebSocket connection established:', ws.current);
+  // }, [wsConnection]);
 
   // Connect to WebSocket server
   useEffect(() => {
-    ws.current = new WebSocket(wsUrl);
+    if (!wsConnection.current) {
+      console.error('WebSocket connection is not established');
+      return;
+    }
+    ws.current = wsConnection.current;
+    console.log('WebSocket connection established:', ws.current);
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log('Received message from server:', data.type);
       if (data.type === 'init') {
         setUserId(data.userId);
         setTokens(data.tokens || {});
         setPhotos(data.photos || {});
+        console.log('Recieved room data:', data.room);
+        setGameState(data.room || {});
       } else if (data.type === 'tokens') {
         setTokens(data.tokens || {});
+      } else if (data.type === 'gameRoom') {
+        setGameState(data.room || {});
       } else if (data.type === 'lockReset') {
         // Reset all users' lockedIn state
         Object.keys(data.tokens).forEach((id) => {
@@ -49,13 +60,19 @@ export function GameControllerProvider({ children }) {
         setPhotos({ ...data.photos });
       }
     };
-    return () => ws.current && ws.current.close();
-  }, []);
+  }, [setLockedIn, setTokens, setUserId, tokens, wsConnection]);
 
   // On first connect, create a token for this user if not present
   useEffect(() => {
+    function toNormalized(x, y) {
+      return {
+        x: (x / size.width) * 1000,
+        y: (y / size.height) * 1000,
+      };
+    }
+
     if (!size) return;
-    if (userId && !tokens[userId]) {
+    if (userId && tokens[userId].label === undefined) {
       const color = getRandomColor();
       const label = userId.slice(0, 2).toUpperCase();
       // Always send normalized coordinates to server
@@ -66,8 +83,19 @@ export function GameControllerProvider({ children }) {
         userId,
       };
       ws.current.send(JSON.stringify({ type: 'move', token }));
+      console.log(gameState);
+      if (gameState?.host === undefined) {
+        ws.current.send(
+          JSON.stringify({
+            type: 'gameRoom',
+            room: {
+              host: userId,
+            },
+          })
+        );
+      }
     }
-  }, [userId, tokens, size?.width, size?.height]);
+  }, [gameState, userId, tokens, size?.width, size?.height, size]);
 
   function userHandleMouseMove({ newToken }) {
     ws.current.send(
@@ -141,14 +169,10 @@ export function GameControllerProvider({ children }) {
         userAddPhoto,
         userRemovePhoto,
         resetUsersLockedIn,
+        gameState,
       }}
     >
       {children}
     </GameControllerContext.Provider>
   );
-}
-
-// Custom hook for easy access
-export function useGameController() {
-  return useContext(GameControllerContext);
 }

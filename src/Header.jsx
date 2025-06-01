@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useCurrentUser } from './Contexts/CurrentUserContext';
-import { useGameController } from './Contexts/GameControllerProvider';
-import { useTokens } from './Contexts/TokensContext';
-import { useSocketConnection } from './SocketConnection';
+import { useCurrentUser } from './Contexts/hooks';
+import { useTokens, useGameController } from './Contexts/hooks';
+import { useSocketConnection } from './Contexts/hooks';
 
 export default function Header() {
-  const { lockedIn } = useCurrentUser();
-  const { resetUsersLockedIn, toggleLockedIn } = useGameController();
+  const { lockedIn, userId } = useCurrentUser();
+  const { resetUsersLockedIn, toggleLockedIn, gameState } = useGameController();
   const { wsUrl } = useSocketConnection();
   const { tokens } = useTokens();
   const [countdown, setCountdown] = useState(null);
@@ -35,8 +34,6 @@ export default function Header() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  console.log(wsUrl);
-
   return (
     <div
       style={{
@@ -56,6 +53,7 @@ export default function Header() {
           alignItems: 'center',
         }}
       >
+        {gameState.host === userId && 'host'}
         <button onClick={toggleLockedIn}>
           {lockedIn ? 'Make changes...' : 'Lock In'}
         </button>

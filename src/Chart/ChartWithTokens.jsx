@@ -2,14 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import '../App.css';
 import Chart from './chart';
 import { UserToken } from './UserToken';
-import { useTokens } from '../Contexts/TokensContext';
-import { useCurrentUser } from '../Contexts/CurrentUserContext';
-import { useGameController } from '../Contexts/GameControllerProvider';
-
-function getRandomColor() {
-  const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
+import {
+  useTokens,
+  useGameController,
+  useCurrentUser,
+} from '../Contexts/hooks';
 
 export default function ChartWithTokens() {
   const { tokens } = useTokens();
@@ -31,7 +28,7 @@ export default function ChartWithTokens() {
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  }, [setSize]);
 
   // Each user gets a unique color and label
   // const ws = useRef(null);

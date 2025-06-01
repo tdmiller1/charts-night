@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8080
 
 # Start the WebSocket server
-CMD ["node", "ws-server.js"]
+CMD ["node", "server/index.js"]
