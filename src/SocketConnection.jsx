@@ -59,37 +59,8 @@ export default function SocketConnection({ children }) {
       if (ws) ws.close();
     }
 
-    function startPing() {
-      interval = setInterval(() => {
-        if (ws.readyState !== 1) {
-          setConnectionError('Lost connection to server.');
-          setWsUrl('');
-          cleanup();
-          return;
-        }
-        try {
-          ws.send(JSON.stringify({ type: 'ping' }));
-        } catch (e) {
-          setConnectionError('Lost connection to server.');
-          setWsUrl('');
-          cleanup();
-          return;
-        }
-        // Clear any previous pong timeout before setting a new one
-        if (timeout) clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          setConnectionError('Server did not respond to ping.');
-          setWsUrl('');
-          cleanup();
-        }, 5000);
-      }, 20000); // 20 seconds
-    }
-
     ws = new window.WebSocket(wsUrl);
     wsRef.current = ws;
-    ws.onopen = () => {
-      startPing();
-    };
     ws.onmessage = (event) => {
       // If server responds to ping, clear pong timeout
       try {
