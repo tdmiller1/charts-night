@@ -7,7 +7,7 @@ export default function Header() {
   const { lockedIn, userId } = useCurrentUser();
   const { resetUsersLockedIn, toggleLockedIn, gameState, userChangeGameMode } =
     useGameController();
-  const { wsUrl } = useSocketConnection();
+  const { wsUrl, logoutUser } = useSocketConnection();
   const { tokens } = useTokens();
   const [countdown, setCountdown] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
@@ -37,6 +37,10 @@ export default function Header() {
 
   const isHost = gameState.host === userId;
   const isFFA = gameState.mode === 'ffa';
+
+  function handleLogout() {
+    logoutUser();
+  }
 
   return (
     <div
@@ -96,7 +100,16 @@ export default function Header() {
           </label>
         </div>
       )}
-      <p>Server: {wsUrl}</p>
+      <div
+        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
+      >
+        <p>Server: {wsUrl}</p>
+        <button onClick={handleLogout}>
+          <span role="img" aria-label="logout">
+            Sign Out
+          </span>
+        </button>
+      </div>
 
       {showAlert && (
         <div

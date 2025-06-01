@@ -83,6 +83,19 @@ export default function SocketConnection({ children }) {
     };
   };
 
+  function logoutUser() {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null; // Clear the reference
+    }
+    setWsUrl('');
+    setInputUrl('ws://localhost:3001');
+    setConnecting(false);
+    setError('');
+    setConnectionError('');
+    setPassword('');
+  }
+
   // Monitor connection after login
   // useEffect(() => {
   //   if (!wsUrl) return;
@@ -198,7 +211,9 @@ export default function SocketConnection({ children }) {
   }
 
   return (
-    <SocketConnectionContext.Provider value={{ wsUrl, wsConnection: wsRef }}>
+    <SocketConnectionContext.Provider
+      value={{ wsUrl, wsConnection: wsRef, logoutUser }}
+    >
       {children}
     </SocketConnectionContext.Provider>
   );
