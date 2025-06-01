@@ -30,13 +30,24 @@ export default function Chart({ width = 1000, height = 1000, staticMode }) {
     userRemovePhoto(photo.id);
   }
 
+  if (Object.keys(photos).length === 0) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <p>No photos added, add them in the Sidebar</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 2 }}>
-        <button onClick={() => setCount((c) => Math.max(3, c - 1))}>-</button>
-        <span style={{ color: '#fff', margin: '0 1em' }}>{count}</span>
-        <button onClick={() => setCount((c) => c + 1)}>+</button>
-      </div>
       <svg
         width={width}
         height={height}
