@@ -35,10 +35,7 @@ export function GameControllerProvider({ children }) {
       } else if (data.type === 'tokens') {
         setTokens(data.tokens || {});
       } else if (data.type === 'photos') {
-        setPhotos((prevPhotos) => ({
-          ...prevPhotos,
-          ...data.photos,
-        }));
+        setPhotos({ ...data.photos });
       }
     };
     return () => ws.current && ws.current.close();
@@ -99,9 +96,24 @@ export function GameControllerProvider({ children }) {
     reader.readAsDataURL(file);
   }
 
+  function userRemovePhoto(id) {
+    ws.current.send(
+      JSON.stringify({
+        type: 'removePhoto',
+        id: id,
+      })
+    );
+  }
+
   return (
     <GameControllerContext.Provider
-      value={{ photos, userHandleMouseMove, userLockingIn, userAddPhoto }}
+      value={{
+        photos,
+        userHandleMouseMove,
+        userLockingIn,
+        userAddPhoto,
+        userRemovePhoto,
+      }}
     >
       {children}
     </GameControllerContext.Provider>

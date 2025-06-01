@@ -44,7 +44,7 @@ export default function Sidebar() {
       </ul>
       <button onClick={handleAddPhoto}>Add Photo</button>
       {/* Display uploaded photos */}
-      <div style={{ marginTop: 16 }}>
+      {/* <div style={{ marginTop: 16 }}>
         <img
           style={{
             maxWidth: 120,
@@ -72,7 +72,7 @@ export default function Sidebar() {
             />
           </>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }
