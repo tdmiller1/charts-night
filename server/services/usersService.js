@@ -23,8 +23,16 @@ export function handleAuth(ws, data) {
       return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    tokens[ws.userId].color = getRandomColor();
+    const color = getRandomColor();
+    tokens[ws.userId].color = color
     ws.send(JSON.stringify({ type: 'authSuccess', userId: ws.userId }));
+
+    // Add player to gameRoom
+    gameRoom.players[ws.userId] = {
+      userId: ws.userId,
+      nickname: data.nickname,
+      color
+    }
 
     // wait 200ms to ensure client is ready
     setTimeout(() => {

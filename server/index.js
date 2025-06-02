@@ -14,6 +14,7 @@ const wss = new WebSocketServer({ port: PORT });
 // game room state
 export let gameRoom = {
   mode: 'ffa', // Default game mode
+  players: {}
 }; // Deteremined by client
 
 // Store tokens by userId

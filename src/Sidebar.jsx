@@ -1,9 +1,12 @@
-import { useTokens, useGameController } from './Contexts/hooks';
+import {  useGameController } from './Contexts/hooks';
 
 export default function Sidebar() {
-  const { tokens } = useTokens();
   const { userAddPhoto, gameState, userSelectPhotoPreset } =
     useGameController();
+
+  if(!gameState.players) {
+    return <div>Loading...</div>; // Handle loading state
+  }
 
   // Allows the user to select a photo from their computer
   // it will then call gamecontroller userAddPhoto with the file
@@ -132,7 +135,7 @@ export default function Sidebar() {
       <div>
         <h4>Players</h4>
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {Object.values(tokens).map((token) => {
+          {Object.values(gameState?.players).map((token) => {
             const useBlack = isColorTooLight(token.color);
 
             function truncateLabel(l) {

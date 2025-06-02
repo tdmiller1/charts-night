@@ -12,14 +12,16 @@ export function GameControllerProvider({ children }) {
   const [gameState, setGameState] = useState({});
   const [photos, setPhotos] = useState({});
 
-  // useEffect(() => {
-  //   if (!wsConnection.current) {
-  //     console.error('WebSocket connection is not established');
-  //     return;
-  //   }
-  //   ws.current = wsConnection.current;
-  //   console.log('WebSocket connection established:', ws.current);
-  // }, [wsConnection]);
+  // Regardless of the game mode, we need to handle the following actions:
+  // - updateGameMode
+  // - updatePlayer
+  // - setPhotoPreset
+  // - addPhoto
+
+  // Game mode:
+  // - god: Host player can control all player tokens. No concept of lockedIn.
+  // - group: Players see a version of all the player tokens, and can move all of them. They can lock in their guesses.
+  // - solo: Players see all live player tokens, but can only move their own token. They can lock in their guess.
 
   // Connect to WebSocket server
   useEffect(() => {

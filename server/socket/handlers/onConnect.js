@@ -4,6 +4,7 @@ import { handleAuth } from '../../services/usersService.js';
 import { gameRoom, tokens, photos } from '../../index.js';
 import { handleTokenMovement } from '../../services/tokenService.js';
 import { handlePhotoPreset } from '../../services/gameService.js';
+import { handleClose } from './onDisconnect.js';
 
 const PINGPONGTIMEOUT = 15000; // 15 seconds
 
@@ -165,38 +166,6 @@ export default function onConnect(ws, wss) {
   });
 
   ws.on('close', () => {
-    console.log(`User ${ws.userId} disconnected`);
-    delete tokens[ws.userId];
-
-    if (gameRoom.host === ws.userId) {
-      // If the host disconnects, find a new host or reset the game room
-      console.log(`Host ${ws.userId} disconnected, selecting new host`);
-      const remainingClients = Array.from(wss.clients).filter(
-        (client) => client.readyState === WS.OPEN && client.userId !== ws.userId
-      );
-      if (remainingClients.length > 0) {
-        // Select a new host from remaining clients
-        const newHost = remainingClients[0].userId;
-        gameRoom.host = newHost;
-        console.log(`New host selected: ${newHost}`);
-      } else {
-        // No remaining clients, reset the game room
-        console.log('No remaining clients, resetting game room');
-        delete gameRoom.host;
-        gameRoom.mode = 'ffa'; // Reset to default mode
-      }
-      // Broadcast reset to all clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
-        }
-      });
-    }
-    // Broadcast updated tokens
-    wss.clients.forEach((client) => {
-      if (client.readyState === WS.OPEN) {
-        client.send(JSON.stringify({ type: 'tokens', tokens }));
-      }
-    });
+    handleClose(ws, wss);
   });
 }
