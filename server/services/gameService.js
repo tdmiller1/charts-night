@@ -1,7 +1,7 @@
 // When a player selects a photo preset, it will go and grab those photos from the server
 // and use them as the current photos for the game.
 
-import { photos } from '../index.js';
+import { gameRoom, photos } from '../index.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -82,4 +82,27 @@ export async function handlePhotoPreset(ws, data) {
   );
 
   console.log(`User ${ws.userId} selected photo preset: ${data.preset}`);
+}
+
+export function canLoggedInUserMoveToken(token, userId) {
+  switch (gameRoom.mode) {
+    case 'god':
+      if (gameRoom.host === userId) {
+        return true;
+      }
+      if (token.userId === userId) {
+        return true;
+      }
+      return false;
+    case 'ffa':
+      if (token.userId === userId) {
+        return true;
+      }
+      return false;
+    case 'group':
+      if (token.userId === userId) {
+        return true;
+      }
+      return false;
+  }
 }

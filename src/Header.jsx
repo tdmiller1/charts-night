@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useCurrentUser } from './Contexts/hooks';
 import { useTokens, useGameController } from './Contexts/hooks';
 import { useSocketConnection } from './Contexts/hooks';

@@ -13,7 +13,7 @@ const wss = new WebSocketServer({ port: PORT });
 
 // game room state
 export let gameRoom = {
-  mode: 'ffa', // Default game mode
+  mode: 'god', // Default game mode
   players: {}
 }; // Deteremined by client
 

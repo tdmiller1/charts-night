@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { WebSocket as WS } from 'ws';
 import { handleAuth } from '../../services/usersService.js';
 import { gameRoom, tokens, photos } from '../../index.js';
-import { handleTokenMovement } from '../../services/tokenService.js';
+import { handlePlayerTokenMovement } from '../../services/tokenService.js';
 import { handlePhotoPreset } from '../../services/gameService.js';
 import { handleClose } from './onDisconnect.js';
 
@@ -55,7 +55,7 @@ export default function onConnect(ws, wss) {
     }
 
     if (data.type === 'move' && data.token) {
-      handleTokenMovement(data.token, ws.userId, wss);
+      handlePlayerTokenMovement(data.token, ws.userId, wss);
     }
 
     if (

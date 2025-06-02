@@ -1,19 +1,13 @@
 import { WebSocket as WS } from 'ws';
-import { gameRoom, tokens } from '../index.js';
+import { tokens } from '../index.js';
+import { canLoggedInUserMoveToken } from './gameService.js';
 
-export function handleTokenMovement(token, loggedInUser, wss) {
-  if (gameRoom.mode === 'ffa' && token.userId !== loggedInUser) {
-    return;
-  }
-  if (
-    gameRoom.mode === 'god' &&
-    token.userId !== loggedInUser &&
-    gameRoom.host !== loggedInUser
-  ) {
+export function handlePlayerTokenMovement(token, loggedInUserId, wss) {
+  if (!canLoggedInUserMoveToken(token, loggedInUserId)) {
     console.warn(
-      `User ${loggedInUser} attempted to move but is not the host in god mode.`
+      `User ${loggedInUserId} attempted to move but is not the host in god mode.`
     );
-    return; // Only the host can move tokens in god mode
+    return;
   }
 
   tokens[token.userId] = { ...token };
