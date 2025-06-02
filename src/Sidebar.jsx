@@ -1,10 +1,10 @@
-import {  useGameController } from './Contexts/hooks';
+import { useGameController } from './Contexts/hooks';
 
 export default function Sidebar() {
   const { userAddPhoto, gameState, userSelectPhotoPreset } =
     useGameController();
 
-  if(!gameState.players) {
+  if (!gameState.players) {
     return <div>Loading...</div>; // Handle loading state
   }
 
@@ -135,8 +135,8 @@ export default function Sidebar() {
       <div>
         <h4>Players</h4>
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {Object.values(gameState?.players).map((token) => {
-            const useBlack = isColorTooLight(token.color);
+          {Object.values(gameState?.players).map((player) => {
+            const useBlack = isColorTooLight(player.color);
 
             function truncateLabel(l) {
               if (!l) return 'Unknown';
@@ -146,12 +146,14 @@ export default function Sidebar() {
               return l;
             }
 
-            const label = truncateLabel(token?.label || token.userId);
+            const label = truncateLabel(
+              player.nickname === '' ? player.userId : player.nickname
+            );
             return (
               <li
-                key={token.userId}
+                key={player.id}
                 style={{
-                  backgroundColor: token.color,
+                  backgroundColor: player.color,
                   color: useBlack ? '#000' : '#fff',
                   padding: '8px 12px',
                   marginBottom: 6,
@@ -165,7 +167,7 @@ export default function Sidebar() {
                   {/* : ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
                 {Math.floor(fromNormalized(token.y, token.y).y)}) */}
                 </span>
-                {isFFA ? token.lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
+                {isFFA ? player.lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
               </li>
             );
           })}

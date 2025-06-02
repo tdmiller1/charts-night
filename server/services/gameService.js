@@ -1,9 +1,11 @@
 // When a player selects a photo preset, it will go and grab those photos from the server
 // and use them as the current photos for the game.
 
-import { gameRoom, photos } from '../index.js';
+import { gameRoom, photos, tokens } from '../index.js';
+import { WebSocket as WS } from 'ws';
 import fs from 'fs/promises';
 import path from 'path';
+import { addOrUpdateTokenToRoom } from './tokenService.js';
 
 const PHOTO_PRESETS = {
   fish: [
@@ -84,25 +86,111 @@ export async function handlePhotoPreset(ws, data) {
   console.log(`User ${ws.userId} selected photo preset: ${data.preset}`);
 }
 
-export function canLoggedInUserMoveToken(token, userId) {
+// TODO: Implement "group" submissions
+// export function submitTokenPlacement(ws, data) {
+//   const player = gameRoom.players[ws.userId];
+//   const tokenPlacements = data.tokens;
+// }
+
+export function handleUpdateGameMode(ws, mode, wss) {
+  if (!gameRoom.host || gameRoom.host !== ws.userId) {
+    console.warn(
+      `User ${ws.userId} attempted to change game mode but is not the host.`
+    );
+    return; // Only the host can change the game mode
+  }
+
+  // Update game mode
+  gameRoom.mode = mode;
+
+  if (mode === 'ffa' || mode === 'god') {
+    // Reset all tokens to default positions for FFA mode
+    Object.values(gameRoom.players).forEach((player) => {
+      console.log(player.color);
+      tokens[player.id] = {
+        color: player.color,
+        id: player.id,
+        x: 300,
+        y: Math.random() * 500 + 200,
+      };
+    });
+  }
+
+  if (mode === 'group') {
+    // no longer rely on server for token placement
+    Object.keys(tokens).forEach((id) => {
+      delete tokens[id];
+    });
+  }
+
+  console.log(`Game mode updated by user ${ws.userId}:`, gameRoom.mode);
+  // Broadcast updated game mode to all clients
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'gameState', gameState: gameRoom }));
+      client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
+}
+
+export function broadcastNewGameState(wss, gameRoom) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'gameState', gameState: gameRoom }));
+    }
+  });
+}
+
+export function sendGameStateToClient(ws) {
+  ws.send(
+    JSON.stringify({
+      type: 'gameState',
+      gameState: gameRoom,
+    })
+  );
+}
+
+export function handleUserInit(wss, playerInfo, ws) {
+  const color = playerInfo.color;
+  let label = playerInfo.nickname;
+  const coords = {
+    x: Math.random() * 500 + 200,
+    y: 100,
+  };
+  // Depending on the active game we either add the users token to the board or do nothing
   switch (gameRoom.mode) {
     case 'god':
-      if (gameRoom.host === userId) {
-        return true;
-      }
-      if (token.userId === userId) {
-        return true;
-      }
-      return false;
+      addOrUpdateTokenToRoom(wss, {
+        id: playerInfo.userId,
+        color,
+        label,
+        ...coords,
+      });
+      break;
     case 'ffa':
-      if (token.userId === userId) {
-        return true;
-      }
-      return false;
+      addOrUpdateTokenToRoom(wss, {
+        id: playerInfo.userId,
+        color,
+        label,
+        ...coords,
+      });
+      break;
     case 'group':
-      if (token.userId === userId) {
-        return true;
-      }
-      return false;
+      addOrUpdateTokenToRoom(wss, {
+        id: playerInfo.userId,
+        color,
+        label,
+        ...coords,
+      });
+      break;
   }
+
+  sendGameStateToClient(ws);
+
+  ws.send(
+    JSON.stringify({
+      type: 'init',
+      userId: ws.userId,
+    })
+  );
 }

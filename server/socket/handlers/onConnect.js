@@ -3,7 +3,10 @@ import { WebSocket as WS } from 'ws';
 import { handleAuth } from '../../services/usersService.js';
 import { gameRoom, tokens, photos } from '../../index.js';
 import { handlePlayerTokenMovement } from '../../services/tokenService.js';
-import { handlePhotoPreset } from '../../services/gameService.js';
+import {
+  handlePhotoPreset,
+  handleUpdateGameMode,
+} from '../../services/gameService.js';
 import { handleClose } from './onDisconnect.js';
 
 const PINGPONGTIMEOUT = 15000; // 15 seconds
@@ -122,46 +125,26 @@ export default function onConnect(ws, wss) {
     }
 
     if (data.type === 'auth') {
-      handleAuth(ws, data, tokens, photos, gameRoom);
+      handleAuth(ws, data, wss);
     }
 
-    if (data.type === 'gameRoom' && data.room) {
+    if (data.type === 'claimHost') {
       // Update game room state
-      Object.assign(gameRoom, data.room);
+      if (gameRoom.host) return;
+      gameRoom.host = ws.userId;
       console.log(`Game room updated by user ${ws.userId}:`, gameRoom);
       // Broadcast updated game room to all clients
       wss.clients.forEach((client) => {
         if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
+          client.send(
+            JSON.stringify({ type: 'gameState', gameState: gameRoom })
+          );
         }
       });
     }
 
     if (data.type === 'gameMode' && data.mode) {
-      if (!gameRoom.host || gameRoom.host !== ws.userId) {
-        console.warn(
-          `User ${ws.userId} attempted to change game mode but is not the host.`
-        );
-        return; // Only the host can change the game mode
-      }
-      // Update game mode
-      gameRoom.mode = data.mode;
-
-      if (data.mode === 'ffa') {
-        // Reset all tokens to default positions for FFA mode
-        Object.keys(tokens).forEach((id) => {
-          tokens[id].lockedIn = false; // Reset lockedIn state
-        });
-      }
-
-      console.log(`Game mode updated by user ${ws.userId}:`, gameRoom.mode);
-      // Broadcast updated game mode to all clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
-          client.send(JSON.stringify({ type: 'tokens', tokens }));
-        }
-      });
+      handleUpdateGameMode(ws, data.mode, wss);
     }
   });
 

@@ -35,8 +35,9 @@ export default function Header() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
+  console.log(gameState.host);
+  console.log(userId);
   const isHost = gameState.host === userId;
-  const isFFA = gameState.mode === 'ffa';
 
   function handleLogout() {
     logoutUser();
@@ -62,7 +63,7 @@ export default function Header() {
         }}
       >
         {isHost && 'host'}
-        {isFFA && (
+        {gameState.mode !== 'god' && (
           <button onClick={toggleLockedIn}>
             {lockedIn ? 'Make changes...' : 'Lock In'}
           </button>
@@ -97,6 +98,18 @@ export default function Header() {
               }}
             />
             God Mode
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="gameMode"
+              value="group"
+              checked={gameState.mode === 'group'}
+              onChange={() => {
+                userChangeGameMode('group');
+              }}
+            />
+            Group
           </label>
         </div>
       )}

@@ -1,10 +1,11 @@
 import { WebSocket as WS } from 'ws';
-import { tokens, gameRoom } from '../../index.js'
+import { tokens, gameRoom } from '../../index.js';
+import { broadcastNewGameState } from '../../services/gameService.js';
 
 export function handleClose(ws, wss) {
   console.log(`User ${ws.userId} disconnected`);
   delete tokens[ws.userId];
-  delete gameRoom.players[ws.userId]
+  delete gameRoom.players[ws.userId];
 
   if (gameRoom.host === ws.userId) {
     // If the host disconnects, find a new host or reset the game room
@@ -26,9 +27,11 @@ export function handleClose(ws, wss) {
     // Broadcast reset to all clients
     wss.clients.forEach((client) => {
       if (client.readyState === WS.OPEN) {
-        client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
+        client.send(JSON.stringify({ type: 'gameState', gameState: gameRoom }));
       }
     });
+  } else {
+    broadcastNewGameState(wss, gameRoom);
   }
   // Broadcast updated tokens
   wss.clients.forEach((client) => {

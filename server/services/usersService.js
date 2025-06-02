@@ -1,12 +1,13 @@
 import dotenv from 'dotenv';
 import process from 'process';
-import { tokens, photos, gameRoom } from '../index.js';
+import { tokens, gameRoom } from '../index.js';
+import { broadcastNewGameState, handleUserInit } from './gameService.js';
 
 dotenv.config();
 
 const PASSPHRASE = process.env.PASSPHRASE;
 
-export function handleAuth(ws, data) {
+export function handleAuth(ws, data, wss) {
   // Handle authentication
   if (data.password === PASSPHRASE) {
     console.log('testing userId', ws.userId);
@@ -24,30 +25,24 @@ export function handleAuth(ws, data) {
     }
 
     const color = getRandomColor();
-    tokens[ws.userId].color = color
+    tokens[ws.userId].color = color;
     ws.send(JSON.stringify({ type: 'authSuccess', userId: ws.userId }));
 
     // Add player to gameRoom
     gameRoom.players[ws.userId] = {
       userId: ws.userId,
       nickname: data.nickname,
-      color
-    }
+      color,
+    };
 
     // wait 200ms to ensure client is ready
     setTimeout(() => {
       console.log('attempting to init user', ws.userId);
       console.log(gameRoom);
-      // Send initial state and userId
-      ws.send(
-        JSON.stringify({
-          type: 'init',
-          userId: ws.userId,
-          tokens,
-          photos,
-          room: gameRoom,
-        })
-      );
+
+      const playerInfo = gameRoom.players[ws.userId];
+      handleUserInit(wss, playerInfo, ws);
+      broadcastNewGameState(wss, gameRoom);
     }, 200);
   } else {
     console.log(`User ${ws.userId} authenticated failed`);

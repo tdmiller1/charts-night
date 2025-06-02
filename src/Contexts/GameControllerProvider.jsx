@@ -8,7 +8,7 @@ export function GameControllerProvider({ children }) {
   const ws = useRef(null);
   const { wsConnection } = useSocketConnection();
   const { tokens, setTokens } = useTokens();
-  const { userId, setUserId, size, setLockedIn } = useCurrentUser();
+  const { userId, setUserId, setLockedIn } = useCurrentUser();
   const [gameState, setGameState] = useState({});
   const [photos, setPhotos] = useState({});
 
@@ -36,14 +36,11 @@ export function GameControllerProvider({ children }) {
       console.log('Received message from server:', data.type);
       if (data.type === 'init') {
         setUserId(data.userId);
-        setTokens(data.tokens || {});
-        setPhotos(data.photos || {});
-        console.log('Recieved room data:', data.room);
-        setGameState(data.room || {});
       } else if (data.type === 'tokens') {
         setTokens(data.tokens || {});
-      } else if (data.type === 'gameRoom') {
-        setGameState(data.room || {});
+      } else if (data.type === 'gameState') {
+        console.log('Received game state:', data.gameState);
+        setGameState(data.gameState || {});
       } else if (data.type === 'lockReset') {
         // Reset all users' lockedIn state
         Object.keys(data.tokens).forEach((id) => {
@@ -61,44 +58,46 @@ export function GameControllerProvider({ children }) {
 
   // On first connect, set token into x,y
   useEffect(() => {
-    function toNormalized(x, y) {
-      return {
-        x: (x / size.width) * 1000,
-        y: (y / size.height) * 1000,
-      };
-    }
+    // function toNormalized(x, y) {
+    //   return {
+    //     x: (x / size.width) * 1000,
+    //     y: (y / size.height) * 1000,
+    //   };
+    // }
 
-    if (!size) return;
-    if (
-      userId &&
-      tokens[userId].x === undefined &&
-      tokens[userId].y === undefined
-    ) {
-      const color =
-        tokens[userId].color ||
-        `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-      const label = tokens[userId].nickname || userId;
-      // Always send normalized coordinates to server
-      const token = {
-        ...toNormalized(Math.random() * 500 + 200, 200),
-        color,
-        label,
-        userId,
-      };
-      ws.current.send(JSON.stringify({ type: 'move', token }));
-      console.log(gameState);
-      if (gameState?.host === undefined) {
-        ws.current.send(
-          JSON.stringify({
-            type: 'gameRoom',
-            room: {
-              host: userId,
-            },
-          })
-        );
-      }
-    }
-  }, [gameState, userId, tokens, size?.width, size?.height, size]);
+    // if (gameState.mode === 'group' && Object.keys(tokens).length === 0) {
+    //   return;
+    // }
+    // if (!size) return;
+    // if (
+    //   userId &&
+    //   tokens[userId].x === undefined &&
+    //   tokens[userId].y === undefined
+    // ) {
+    //   const color =
+    //     tokens[userId].color ||
+    //     `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+    //   const label = tokens[userId].nickname || userId;
+    //   // Always send normalized coordinates to server
+    //   // TODO: Refactor away userId assumption as id
+    //   const token = {
+    //     ...toNormalized(Math.random() * 500 + 200, 200),
+    //     color,
+    //     label,
+    //     id: userId,
+    //   };
+    //   ws.current.send(JSON.stringify({ type: 'move', token }));
+    //   console.log(gameState);
+    // if (gameState?.host === undefined) {
+    console.log(userId);
+    ws.current.send(
+      JSON.stringify({
+        type: 'claimHost',
+      })
+    );
+    // }
+    // }
+  }, [userId]);
 
   function userHandleMouseMove({ newToken }) {
     ws.current.send(

@@ -7,13 +7,12 @@ import {
   useGameController,
   useCurrentUser,
 } from '../Contexts/hooks';
+import GameboardTokens from './GameboardTokens';
 
 export default function ChartWithTokens() {
   const { tokens } = useTokens();
-  const { userId, size, setSize, lockedIn } = useCurrentUser();
-  const { userHandleMouseMove, gameState } = useGameController();
-
-  const isFFA = gameState.mode === 'ffa';
+  const { userId, size, setSize } = useCurrentUser();
+  const { userHandleMouseMove } = useGameController();
 
   // Track client container size
   const containerRef = useRef(null);
@@ -45,26 +44,6 @@ export default function ChartWithTokens() {
       y: (y / size.height) * 1000,
     };
   }
-  // Convert normalized (0-1000) to px for local rendering
-  function fromNormalized(x, y) {
-    return {
-      x: (x / 1000) * size.width,
-      y: (y / 1000) * size.height,
-    };
-  }
-
-  // Drag logic for this user's token
-  const handleMouseDown = (e, token) => {
-    if (lockedIn) return;
-    setDragging(token);
-    // const myToken = tokens[userId];
-    // Convert normalized to px for offset
-    const { x, y } = fromNormalized(token.x, token.y);
-    setOffset({
-      x: e.clientX - x,
-      y: e.clientY - y,
-    });
-  };
 
   const handleMouseMove = (e) => {
     if (dragging && userId) {
@@ -81,8 +60,6 @@ export default function ChartWithTokens() {
   };
 
   const handleMouseUp = () => setDragging(null);
-
-  const disableDragging = !isFFA && gameState.host !== userId;
 
   return (
     <div
@@ -104,39 +81,12 @@ export default function ChartWithTokens() {
         height={size.height}
       />
       {/* Render all user tokens */}
-      {Object.values(tokens).map((token) => {
-        // Convert normalized to px for rendering
-        const { x, y } = fromNormalized(token.x, token.y);
-
-        const canUserDragForFFA = isFFA && token.userId === userId;
-        const canUserDragForGod = !isFFA && gameState.host === userId;
-
-        function truncateLabel(l) {
-          if (!l) return 'Unknown';
-          if (l.length > 4) {
-            return l.slice(0, 4);
-          }
-          return l;
-        }
-
-        const label = truncateLabel(token?.label || token.userId);
-
-        return (
-          <UserToken
-            disableDragging={!canUserDragForFFA && !canUserDragForGod}
-            key={token.userId}
-            x={x}
-            y={y}
-            color={token.color}
-            label={token.userId !== userId ? label : 'You'}
-            onMouseDown={(e) =>
-              !disableDragging ? handleMouseDown(e, token) : undefined
-            }
-            lockedIn={lockedIn}
-            dragging={dragging}
-          />
-        );
-      })}
+      <GameboardTokens
+        tokens={tokens}
+        setOffset={setOffset}
+        dragging={dragging}
+        setDragging={setDragging}
+      />
     </div>
   );
 }
