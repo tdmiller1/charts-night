@@ -5,8 +5,13 @@ import { useSocketConnection } from './Contexts/hooks';
 
 export default function Header() {
   const { lockedIn, userId } = useCurrentUser();
-  const { resetUsersLockedIn, toggleLockedIn, gameState, userChangeGameMode } =
-    useGameController();
+  const {
+    resetUsersLockedIn,
+    toggleLockedIn,
+    gameState,
+    userChangeGameMode,
+    userResetGame,
+  } = useGameController();
   const { wsUrl, logoutUser } = useSocketConnection();
   const { tokens } = useTokens();
   const [countdown, setCountdown] = useState(null);
@@ -54,6 +59,7 @@ export default function Header() {
       }}
     >
       <div>Charts!</div>
+      <button onClick={userResetGame}>Reset</button>
       <div
         style={{
           display: 'flex',

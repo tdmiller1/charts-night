@@ -25,7 +25,7 @@ const PHOTO_PRESETS = {
   ],
 };
 
-export async function handlePhotoPreset(ws, data) {
+export async function handlePhotoPreset(ws, data, wss) {
   if (!data.preset) {
     console.warn('No preset provided');
     return;
@@ -75,23 +75,25 @@ export async function handlePhotoPreset(ws, data) {
     photos[photoId] = photoObj;
   });
 
-  // Notify the client about the updated photos
-  ws.send(
-    JSON.stringify({
-      type: 'photos',
-      photos,
-    })
-  );
+  // Broadcast to all clients about the updated photos
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'photos', photos }));
+    }
+  });
 
   console.log(`User ${ws.userId} selected photo preset: ${data.preset}`);
 }
 
-export function submitTokenPlacement(ws, tokens, wss) {
+export function submitTokenPlacement(ws, submittedTokens, wss) {
   // 1. Validate that the tokens sent match the amount of players in the game
   const playerCount = Object.keys(gameRoom.players).length;
-  if (!Array.isArray(tokens) || tokens.length !== playerCount) {
+  if (
+    !Array.isArray(submittedTokens) ||
+    submittedTokens.length !== playerCount
+  ) {
     console.warn(
-      `Token count ${tokens?.length} does not match number of players ${playerCount}.`
+      `Token count ${submittedTokens?.length} does not match number of players ${playerCount}.`
     );
     ws.send(
       JSON.stringify({
@@ -113,7 +115,7 @@ export function submitTokenPlacement(ws, tokens, wss) {
     );
     return;
   }
-  gameRoom.players[ws.userId].tokens = tokens;
+  gameRoom.players[ws.userId].tokens = submittedTokens;
 
   // 3. Check if all players have submitted their tokens
   const allSubmitted = Object.values(gameRoom.players).every(
@@ -125,9 +127,27 @@ export function submitTokenPlacement(ws, tokens, wss) {
     // 4. Calculate group placements
     const averagedTokens = calculateGroupPlacements();
     // Update the global tokens state
+    Object.keys(tokens).forEach((id) => {
+      delete tokens[id];
+    });
     averagedTokens.forEach((token) => {
       tokens[token.id] = token;
     });
+    // Also add each players tokens to the board so we can see them all together.
+    Object.values(gameRoom.players).forEach((player) => {
+      if (Array.isArray(player.tokens)) {
+        player.tokens.forEach((token) => {
+          tokens[`player-${ws.userId}-${token.id}`] = {
+            ...token,
+            id: `player-${ws.userId}-${token.id}`,
+            color: token.color,
+            x: token.x,
+            y: token.y,
+          };
+        });
+      }
+    });
+
     // Broadcast averaged tokens to all players
     wss.clients.forEach((client) => {
       if (client.readyState === WS.OPEN) {
@@ -142,27 +162,32 @@ export function submitTokenPlacement(ws, tokens, wss) {
 // then averages the location for each token
 // Responds back with the array of those average tokens
 function calculateGroupPlacements() {
-  // Aggregate token placements by token index
+  // Aggregate token placements by token id
   const playerList = Object.values(gameRoom.players);
   if (playerList.length === 0) return [];
-  const tokenCount = playerList[0].tokens.length;
-  const sums = Array(tokenCount)
-    .fill(null)
-    .map(() => ({ x: 0, y: 0, count: 0, id: null, color: null }));
+  const tokenMap = {};
 
   playerList.forEach((player) => {
-    player.tokens.forEach((token, idx) => {
-      sums[idx].x += token.x;
-      sums[idx].y += token.y;
-      sums[idx].count += 1;
-      if (!sums[idx].id) sums[idx].id = token.id;
-      if (!sums[idx].color) sums[idx].color = token.color;
+    if (!Array.isArray(player.tokens)) return;
+    player.tokens.forEach((token) => {
+      if (!tokenMap[token.id]) {
+        tokenMap[token.id] = {
+          id: token.id,
+          color: token.color,
+          x: 0,
+          y: 0,
+          count: 0,
+        };
+      }
+      tokenMap[token.id].x += token.x;
+      tokenMap[token.id].y += token.y;
+      tokenMap[token.id].count += 1;
     });
   });
 
-  // Average the positions
-  return sums.map((sum) => ({
-    id: sum.id,
+  // Average the positions for each token id
+  return Object.values(tokenMap).map((sum) => ({
+    id: `avg-${sum.id}`,
     color: sum.color,
     x: sum.x / sum.count,
     y: sum.y / sum.count,
@@ -266,8 +291,41 @@ export function handleUserInit(wss, playerInfo, ws) {
 
   ws.send(
     JSON.stringify({
+      type: 'photos',
+      photos,
+    })
+  );
+
+  ws.send(
+    JSON.stringify({
       type: 'init',
       userId: ws.userId,
     })
   );
+}
+
+export function handleResetGame(wss) {
+  switch (gameRoom.mode) {
+    case 'god':
+      break;
+    case 'ffa':
+      break;
+    case 'group':
+      // Remove average tokens + players client submission from board
+      Object.keys(tokens).forEach((id) => {
+        delete tokens[id];
+      });
+      // Remove players client submission from gamestate
+      Object.values(gameRoom.players).forEach((player) => {
+        player.tokens = {};
+      });
+      break;
+  }
+
+  // Broadcast token updates
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
 }

@@ -7,6 +7,7 @@ import {
   handlePhotoPreset,
   handleUpdateGameMode,
   submitTokenPlacement,
+  handleResetGame,
 } from '../../services/gameService.js';
 import { handleClose } from './onDisconnect.js';
 
@@ -34,6 +35,7 @@ export default function onConnect(ws, wss) {
     console.log(`Pong received from user ${ws.userId}`);
     console.log(`Tokens: `, Object.keys(tokens));
     console.log(`GameState: `, gameRoom);
+    console.log('Photos', Object.keys(photos));
     // Reset the ping interval if pong is received
     clearInterval(pingInterval);
     setTimeout(() => {
@@ -81,7 +83,11 @@ export default function onConnect(ws, wss) {
     }
 
     if (data.type === 'photoPreset') {
-      handlePhotoPreset(ws, data);
+      handlePhotoPreset(ws, data, wss);
+    }
+
+    if (data.type === 'resetGame') {
+      handleResetGame(wss);
     }
 
     if (data.type === 'addPhoto' && data.photo) {

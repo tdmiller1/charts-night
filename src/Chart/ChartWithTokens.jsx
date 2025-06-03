@@ -114,6 +114,10 @@ export default function ChartWithTokens() {
 
   const handleMouseUp = () => setDragging(null);
 
+  // TODO: Make sure you move the tokens before selecting "Done". Perhaps theres some validation
+  // TODO: Have labels work for the client tokens
+  // TODO: Whenever we receive all of the average tokens, make sure its obvious which tokens belong to which player, and which tokens are FOR each player
+  // Consider a color gradient, or if you add profile pictures. Just use the profile picture and the token border will be the color of the player that submitted it
   return (
     <>
       <button

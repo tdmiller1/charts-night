@@ -194,6 +194,14 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function userResetGame() {
+    ws.current.send(
+      JSON.stringify({
+        type: 'resetGame',
+      })
+    );
+  }
+
   return (
     <GameControllerContext.Provider
       value={{
@@ -206,6 +214,7 @@ export function GameControllerProvider({ children }) {
         userChangeGameMode,
         userSelectPhotoPreset,
         userSubmitTokenPlacement,
+        userResetGame,
         gameState,
       }}
     >
