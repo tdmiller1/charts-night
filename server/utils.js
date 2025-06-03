@@ -4,9 +4,6 @@ export function canLoggedInUserMoveToken(tokenId, userId, gamemode, hostId) {
       if (hostId === userId) {
         return true;
       }
-      if (tokenId === userId) {
-        return true;
-      }
       return false;
     case 'ffa':
       if (tokenId === userId) {

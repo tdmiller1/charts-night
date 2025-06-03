@@ -12,7 +12,37 @@ import GameboardTokens from './GameboardTokens';
 export default function ChartWithTokens() {
   const { tokens } = useTokens();
   const { userId, size, setSize } = useCurrentUser();
-  const { userHandleMouseMove } = useGameController();
+  const { userHandleMouseMove, gameState, userSubmitTokenPlacement } =
+    useGameController();
+  const [clientTokens, setClientTokens] = useState({});
+
+  const moveServerToken = gameState.mode !== 'group';
+
+  useEffect(() => {
+    if (!moveServerToken && gameState.players) {
+      setClientTokens((prevTokens) => {
+        const newTokens = { ...prevTokens };
+        // Remove tokens for players no longer present
+        Object.keys(newTokens).forEach((id) => {
+          if (!gameState.players[id]) {
+            delete newTokens[id];
+          }
+        });
+        // Add tokens for new players
+        Object.entries(gameState.players).forEach(([id, player]) => {
+          if (!newTokens[id]) {
+            newTokens[id] = {
+              ...player,
+              id: player.userId,
+              x: 200,
+              y: Math.random() * 500 + 200, // Default position for client tokens
+            };
+          }
+        });
+        return newTokens;
+      });
+    }
+  }, [gameState, moveServerToken]);
 
   // Track client container size
   const containerRef = useRef(null);
@@ -46,47 +76,81 @@ export default function ChartWithTokens() {
   }
 
   const handleMouseMove = (e) => {
-    if (dragging && userId) {
-      // Convert mouse px to normalized for server
-      const { x, y } = toNormalized(e.clientX - offset.x, e.clientY - offset.y);
-      const newToken = {
-        ...dragging,
-        x,
-        y,
-      };
+    if (moveServerToken) {
+      if (dragging && userId) {
+        // Convert mouse px to normalized for server
+        const { x, y } = toNormalized(
+          e.clientX - offset.x,
+          e.clientY - offset.y
+        );
+        const newToken = {
+          ...dragging,
+          x,
+          y,
+        };
 
-      userHandleMouseMove({ newToken });
+        userHandleMouseMove({ newToken });
+      }
+    } else {
+      // Client-side only dragging
+      if (dragging) {
+        console.log('Dragging token:', dragging);
+        const { x, y } = toNormalized(
+          e.clientX - offset.x,
+          e.clientY - offset.y
+        );
+        const newToken = {
+          ...dragging,
+          x,
+          y,
+        };
+        setClientTokens((prevTokens) => ({
+          ...prevTokens,
+          [dragging.userId]: newToken,
+        }));
+      }
     }
   };
 
   const handleMouseUp = () => setDragging(null);
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        width: '80vw',
-        height: '80vh',
-        maxWidth: '1000px',
-        maxHeight: '1000px',
-        position: 'relative',
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      <Chart
-        key={`${size.width}:${size.height}`}
-        width={size.width}
-        height={size.height}
-      />
-      {/* Render all user tokens */}
-      <GameboardTokens
-        tokens={tokens}
-        setOffset={setOffset}
-        dragging={dragging}
-        setDragging={setDragging}
-      />
-    </div>
+    <>
+      <button
+        onClick={() => {
+          console.log('Submitting token placements:', clientTokens);
+          userSubmitTokenPlacement(Object.values(clientTokens));
+        }}
+      >
+        Done
+      </button>
+      <div
+        ref={containerRef}
+        style={{
+          width: '80vw',
+          height: '80vh',
+          maxWidth: '1000px',
+          maxHeight: '1000px',
+          position: 'relative',
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <Chart
+          key={`${size.width}:${size.height}`}
+          width={size.width}
+          height={size.height}
+        />
+        {/* Render all server tokens */}
+        <GameboardTokens
+          tokens={Object.assign({}, tokens, clientTokens)}
+          setOffset={setOffset}
+          dragging={dragging}
+          setDragging={setDragging}
+          clientSide={!moveServerToken}
+        />
+      </div>
+    </>
   );
 }

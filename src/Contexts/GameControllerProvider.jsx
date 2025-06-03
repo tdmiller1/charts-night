@@ -185,6 +185,15 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function userSubmitTokenPlacement(tokens) {
+    ws.current.send(
+      JSON.stringify({
+        type: 'submitGroupTokens',
+        data: tokens,
+      })
+    );
+  }
+
   return (
     <GameControllerContext.Provider
       value={{
@@ -196,6 +205,7 @@ export function GameControllerProvider({ children }) {
         resetUsersLockedIn,
         userChangeGameMode,
         userSelectPhotoPreset,
+        userSubmitTokenPlacement,
         gameState,
       }}
     >

@@ -1,14 +1,15 @@
 import '../App.css';
 import { UserToken } from './UserToken';
-import {
-  useTokens,
-  useGameController,
-  useCurrentUser,
-} from '../Contexts/hooks';
+import { useGameController, useCurrentUser } from '../Contexts/hooks';
 import { canLoggedInUserMoveToken } from '../../server/utils';
 
-export default function GameboardTokens({ setOffset, dragging, setDragging }) {
-  const { tokens } = useTokens();
+export default function GameboardTokens({
+  tokens,
+  setOffset,
+  dragging,
+  setDragging,
+  clientSide,
+}) {
   const { userId, size, lockedIn } = useCurrentUser();
   const { gameState } = useGameController();
 
@@ -42,12 +43,14 @@ export default function GameboardTokens({ setOffset, dragging, setDragging }) {
         // Convert normalized to px for rendering
         const { x, y } = fromNormalized(token.x, token.y);
 
-        const canUserDragToken = canLoggedInUserMoveToken(
-          token.id,
-          userId,
-          gameState.mode,
-          gameState.host
-        );
+        const canUserDragToken =
+          clientSide ||
+          canLoggedInUserMoveToken(
+            token.id,
+            userId,
+            gameState.mode,
+            gameState.host
+          );
 
         function truncateLabel(l) {
           if (!l) return 'Unknown';

@@ -86,11 +86,88 @@ export async function handlePhotoPreset(ws, data) {
   console.log(`User ${ws.userId} selected photo preset: ${data.preset}`);
 }
 
-// TODO: Implement "group" submissions
-// export function submitTokenPlacement(ws, data) {
-//   const player = gameRoom.players[ws.userId];
-//   const tokenPlacements = data.tokens;
-// }
+export function submitTokenPlacement(ws, tokens, wss) {
+  // 1. Validate that the tokens sent match the amount of players in the game
+  const playerCount = Object.keys(gameRoom.players).length;
+  if (!Array.isArray(tokens) || tokens.length !== playerCount) {
+    console.warn(
+      `Token count ${tokens?.length} does not match number of players ${playerCount}.`
+    );
+    ws.send(
+      JSON.stringify({
+        type: 'error',
+        message: 'Token count does not match number of players.',
+      })
+    );
+    return;
+  }
+
+  // 2. Store the player's token placements
+  if (!gameRoom.players[ws.userId]) {
+    console.warn('Player not found in game.');
+    ws.send(
+      JSON.stringify({
+        type: 'error',
+        message: 'Player not found in game.',
+      })
+    );
+    return;
+  }
+  gameRoom.players[ws.userId].tokens = tokens;
+
+  // 3. Check if all players have submitted their tokens
+  const allSubmitted = Object.values(gameRoom.players).every(
+    (player) => Array.isArray(player.tokens) && player.tokens.length > 0
+  );
+
+  if (allSubmitted) {
+    console.log('Everyone has submitted');
+    // 4. Calculate group placements
+    const averagedTokens = calculateGroupPlacements();
+    // Update the global tokens state
+    averagedTokens.forEach((token) => {
+      tokens[token.id] = token;
+    });
+    // Broadcast averaged tokens to all players
+    wss.clients.forEach((client) => {
+      if (client.readyState === WS.OPEN) {
+        client.send(JSON.stringify({ type: 'tokens', tokens }));
+      }
+    });
+  }
+}
+
+// Loops over each player in the game, finds their token submissions
+// aggregates the locations for each token
+// then averages the location for each token
+// Responds back with the array of those average tokens
+function calculateGroupPlacements() {
+  // Aggregate token placements by token index
+  const playerList = Object.values(gameRoom.players);
+  if (playerList.length === 0) return [];
+  const tokenCount = playerList[0].tokens.length;
+  const sums = Array(tokenCount)
+    .fill(null)
+    .map(() => ({ x: 0, y: 0, count: 0, id: null, color: null }));
+
+  playerList.forEach((player) => {
+    player.tokens.forEach((token, idx) => {
+      sums[idx].x += token.x;
+      sums[idx].y += token.y;
+      sums[idx].count += 1;
+      if (!sums[idx].id) sums[idx].id = token.id;
+      if (!sums[idx].color) sums[idx].color = token.color;
+    });
+  });
+
+  // Average the positions
+  return sums.map((sum) => ({
+    id: sum.id,
+    color: sum.color,
+    x: sum.x / sum.count,
+    y: sum.y / sum.count,
+  }));
+}
 
 export function handleUpdateGameMode(ws, mode, wss) {
   if (!gameRoom.host || gameRoom.host !== ws.userId) {
@@ -107,9 +184,9 @@ export function handleUpdateGameMode(ws, mode, wss) {
     // Reset all tokens to default positions for FFA mode
     Object.values(gameRoom.players).forEach((player) => {
       console.log(player.color);
-      tokens[player.id] = {
+      tokens[player.userId] = {
         color: player.color,
-        id: player.id,
+        id: player.userId,
         x: 300,
         y: Math.random() * 500 + 200,
       };

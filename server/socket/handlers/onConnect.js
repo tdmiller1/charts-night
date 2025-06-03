@@ -6,6 +6,7 @@ import { handlePlayerTokenMovement } from '../../services/tokenService.js';
 import {
   handlePhotoPreset,
   handleUpdateGameMode,
+  submitTokenPlacement,
 } from '../../services/gameService.js';
 import { handleClose } from './onDisconnect.js';
 
@@ -112,20 +113,27 @@ export default function onConnect(ws, wss) {
       });
     }
     if (data.type === 'resetLockedIn') {
-      // Reset all users' lockedIn state
-      Object.keys(tokens).forEach((id) => {
-        tokens[id].lockedIn = false;
-      });
-      // Broadcast updated tokens
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'lockReset', tokens }));
-        }
-      });
+      if (gameRoom.mode === 'ffa') {
+        // Reset all users' lockedIn state
+        Object.keys(tokens).forEach((id) => {
+          tokens[id].lockedIn = false;
+        });
+        // Broadcast updated tokens
+        wss.clients.forEach((client) => {
+          if (client.readyState === WS.OPEN) {
+            client.send(JSON.stringify({ type: 'lockReset', tokens }));
+          }
+        });
+      }
     }
 
     if (data.type === 'auth') {
       handleAuth(ws, data, wss);
+    }
+
+    if (data.type === 'submitGroupTokens') {
+      console.log(data);
+      submitTokenPlacement(ws, data.data, wss);
     }
 
     if (data.type === 'claimHost') {
