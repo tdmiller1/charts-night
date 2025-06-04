@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import '../App.css';
 import Chart from './chart';
 import { UserToken } from './UserToken';
@@ -9,7 +9,7 @@ import {
 } from '../Contexts/hooks';
 import GameboardTokens from './GameboardTokens';
 
-export default function ChartWithTokens() {
+export function ChartWithTokens() {
   const { tokens } = useTokens();
   const { userId, size, setSize } = useCurrentUser();
   const {
@@ -17,6 +17,7 @@ export default function ChartWithTokens() {
     gameState,
     userSubmitTokenPlacement,
     userResetTokenPlacement,
+    userResetGame,
   } = useGameController();
   const [clientTokens, setClientTokens] = useState({});
 
@@ -70,9 +71,42 @@ export default function ChartWithTokens() {
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  if (gameState['players'] === undefined) {
-    return <div>Loading...</div>;
-  }
+  const hasUserSubmitted = gameState.players[userId]?.lockedIn;
+  const hasEveryoneSubmitted = Object.values(gameState.players).every(
+    (player) => player.lockedIn
+  );
+  const isGroupGame = gameState.mode === 'group';
+  console.log(gameState.players);
+  console.log('Has user submitted:', hasUserSubmitted);
+
+  const groupModeButtonText = useMemo(() => {
+    if (gameState['players'] === undefined) return 'Loading...';
+    if (!isGroupGame) return null;
+    if (hasUserSubmitted) {
+      if (hasEveryoneSubmitted) {
+        if (userId === gameState.host) {
+          return 'Reset Token Placements';
+        } else {
+          return 'Waiting for host to reset';
+        }
+      } else {
+        return 'Keep Moving Tokens';
+      }
+    } else {
+      return 'Lock In Tokens';
+    }
+  }, [gameState, hasEveryoneSubmitted, hasUserSubmitted, isGroupGame, userId]);
+
+  const handleGroupModeButtonClick = () => {
+    if (hasEveryoneSubmitted && userId === gameState.host) {
+      userResetGame();
+    } else {
+      userResetTokenPlacement();
+    }
+    if (!hasUserSubmitted) {
+      userSubmitTokenPlacement(Object.values(clientTokens));
+    }
+  };
 
   // --- Coordinate normalization helpers ---
   // Convert absolute px to normalized (0-1000) for server
@@ -122,10 +156,9 @@ export default function ChartWithTokens() {
 
   const handleMouseUp = () => setDragging(null);
 
-  const hasUserSubmitted = gameState.players[userId]?.lockedIn;
-  const isGroupGame = gameState.mode === 'group';
-  console.log(gameState.players);
-  console.log('Has user submitted:', hasUserSubmitted);
+  if (gameState['players'] === undefined) {
+    return <div>Loading...</div>;
+  }
 
   // TODO: Make sure you move the tokens before selecting "Done". Perhaps theres some validation
   // TODO: Have labels work for the client tokens
@@ -135,16 +168,10 @@ export default function ChartWithTokens() {
     <>
       {isGroupGame && (
         <button
-          onClick={() => {
-            console.log('Submitting token placements:', clientTokens);
-            if (hasUserSubmitted) {
-              userResetTokenPlacement();
-            } else {
-              userSubmitTokenPlacement(Object.values(clientTokens));
-            }
-          }}
+          disabled={hasEveryoneSubmitted && userId !== gameState.host}
+          onClick={handleGroupModeButtonClick}
         >
-          {hasUserSubmitted ? 'Reset Tokens' : 'Lock In Tokens'}
+          {groupModeButtonText}
         </button>
       )}
       <div
@@ -172,8 +199,19 @@ export default function ChartWithTokens() {
           dragging={dragging}
           setDragging={setDragging}
           clientSide={!moveServerToken}
+          disableDragging={hasUserSubmitted}
         />
       </div>
     </>
   );
+}
+
+export default function ChartWithTokensContainer() {
+  const { userId } = useCurrentUser();
+  const { gameState } = useGameController();
+
+  if (!userId || !gameState) {
+    return <div>Loading...</div>;
+  }
+  return <ChartWithTokens />;
 }

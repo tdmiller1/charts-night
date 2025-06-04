@@ -9,6 +9,7 @@ export default function GameboardTokens({
   dragging,
   setDragging,
   clientSide,
+  disableDragging,
 }) {
   const { userId, size } = useCurrentUser();
   const { gameState } = useGameController();
@@ -44,13 +45,14 @@ export default function GameboardTokens({
         const { x, y } = fromNormalized(token.x, token.y);
 
         const canUserDragToken =
-          clientSide ||
-          canLoggedInUserMoveToken(
-            token.id,
-            userId,
-            gameState.mode,
-            gameState.host
-          );
+          !disableDragging &&
+          (clientSide ||
+            canLoggedInUserMoveToken(
+              token.id,
+              userId,
+              gameState.mode,
+              gameState.host
+            ));
 
         function truncateLabel(l) {
           if (!l) return 'Unknown';

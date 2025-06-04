@@ -154,11 +154,16 @@ export function submitTokenPlacement(ws, submittedTokens, wss) {
     });
     // Also add each players tokens to the board so we can see them all together.
     Object.values(gameRoom.players).forEach((player) => {
+      console.log(
+        'going through playsers tokensers',
+        player.userId,
+        player.tokens.length
+      );
       if (Array.isArray(player.tokens)) {
         player.tokens.forEach((token) => {
-          tokens[`player-${ws.userId}-${token.id}`] = {
+          tokens[`player-${player.userId}-${token.id}`] = {
             ...token,
-            id: `player-${ws.userId}-${token.id}`,
+            id: `player-${player.userId}-${token.id}`,
             color: token.color,
             x: token.x,
             y: token.y,
@@ -166,6 +171,8 @@ export function submitTokenPlacement(ws, submittedTokens, wss) {
         });
       }
     });
+
+    console.log(tokens);
 
     // Broadcast averaged tokens to all players
     wss.clients.forEach((client) => {
@@ -207,6 +214,7 @@ function calculateGroupPlacements() {
   // Average the positions for each token id
   return Object.values(tokenMap).map((sum) => ({
     id: `avg-${sum.id}`,
+    nickname: gameRoom.players[sum.id],
     color: sum.color,
     x: sum.x / sum.count,
     y: sum.y / sum.count,
@@ -344,6 +352,7 @@ export function handleResetGame(wss) {
   // Broadcast token updates
   wss.clients.forEach((client) => {
     if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'gameState', gameState: gameRoom }));
       client.send(JSON.stringify({ type: 'tokens', tokens }));
     }
   });

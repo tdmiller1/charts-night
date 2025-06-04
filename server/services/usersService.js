@@ -20,8 +20,11 @@ export function handleAuth(ws, data, wss) {
     // Set token color
 
     function getRandomColor() {
-      const colors = ['#61dafb', '#ffb347', '#e06666', '#b4e061', '#b366e0'];
-      return colors[Math.floor(Math.random() * colors.length)];
+      // Generate a random hex color code
+      const hex = Math.floor(Math.random() * 0xffffff)
+        .toString(16)
+        .padStart(6, '0');
+      return `#${hex}`;
     }
 
     const color = getRandomColor();
