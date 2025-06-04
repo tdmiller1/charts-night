@@ -10,7 +10,7 @@ export default function GameboardTokens({
   setDragging,
   clientSide,
 }) {
-  const { userId, size, lockedIn } = useCurrentUser();
+  const { userId, size } = useCurrentUser();
   const { gameState } = useGameController();
 
   // Convert normalized (0-1000) to px for local rendering
@@ -75,7 +75,6 @@ export default function GameboardTokens({
             onMouseDown={(e) =>
               canUserDragToken ? handleMouseDown(e, token) : undefined
             }
-            lockedIn={lockedIn}
             dragging={dragging}
           />
         );

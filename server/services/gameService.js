@@ -85,6 +85,18 @@ export async function handlePhotoPreset(ws, data, wss) {
   console.log(`User ${ws.userId} selected photo preset: ${data.preset}`);
 }
 
+export function resetUserTokenPlacement(ws) {
+  // remove players tokens from their game state
+  delete gameRoom.players[ws.userId].tokens;
+
+  ws.send(
+    JSON.stringify({
+      type: 'gameState',
+      gameState: gameRoom,
+    })
+  );
+}
+
 export function submitTokenPlacement(ws, submittedTokens, wss) {
   // 1. Validate that the tokens sent match the amount of players in the game
   const playerCount = Object.keys(gameRoom.players).length;
@@ -116,6 +128,13 @@ export function submitTokenPlacement(ws, submittedTokens, wss) {
     return;
   }
   gameRoom.players[ws.userId].tokens = submittedTokens;
+
+  // broadcast player locked in status
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'gameState', gameState: gameRoom }));
+    }
+  });
 
   // 3. Check if all players have submitted their tokens
   const allSubmitted = Object.values(gameRoom.players).every(

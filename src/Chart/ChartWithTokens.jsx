@@ -12,8 +12,12 @@ import GameboardTokens from './GameboardTokens';
 export default function ChartWithTokens() {
   const { tokens } = useTokens();
   const { userId, size, setSize } = useCurrentUser();
-  const { userHandleMouseMove, gameState, userSubmitTokenPlacement } =
-    useGameController();
+  const {
+    userHandleMouseMove,
+    gameState,
+    userSubmitTokenPlacement,
+    userResetTokenPlacement,
+  } = useGameController();
   const [clientTokens, setClientTokens] = useState({});
 
   const moveServerToken = gameState.mode !== 'group';
@@ -66,6 +70,10 @@ export default function ChartWithTokens() {
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
+  if (gameState['players'] === undefined) {
+    return <div>Loading...</div>;
+  }
+
   // --- Coordinate normalization helpers ---
   // Convert absolute px to normalized (0-1000) for server
   function toNormalized(x, y) {
@@ -114,20 +122,31 @@ export default function ChartWithTokens() {
 
   const handleMouseUp = () => setDragging(null);
 
+  const hasUserSubmitted = gameState.players[userId]?.lockedIn;
+  const isGroupGame = gameState.mode === 'group';
+  console.log(gameState.players);
+  console.log('Has user submitted:', hasUserSubmitted);
+
   // TODO: Make sure you move the tokens before selecting "Done". Perhaps theres some validation
   // TODO: Have labels work for the client tokens
   // TODO: Whenever we receive all of the average tokens, make sure its obvious which tokens belong to which player, and which tokens are FOR each player
   // Consider a color gradient, or if you add profile pictures. Just use the profile picture and the token border will be the color of the player that submitted it
   return (
     <>
-      <button
-        onClick={() => {
-          console.log('Submitting token placements:', clientTokens);
-          userSubmitTokenPlacement(Object.values(clientTokens));
-        }}
-      >
-        Done
-      </button>
+      {isGroupGame && (
+        <button
+          onClick={() => {
+            console.log('Submitting token placements:', clientTokens);
+            if (hasUserSubmitted) {
+              userResetTokenPlacement();
+            } else {
+              userSubmitTokenPlacement(Object.values(clientTokens));
+            }
+          }}
+        >
+          {hasUserSubmitted ? 'Reset Tokens' : 'Lock In Tokens'}
+        </button>
+      )}
       <div
         ref={containerRef}
         style={{

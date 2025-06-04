@@ -117,7 +117,7 @@ export default function Sidebar() {
     return luminance > 180; // threshold for white text
   }
 
-  const isFFA = gameState?.mode === 'ffa';
+  const isGroup = gameState?.mode === 'group';
 
   return (
     <div
@@ -167,7 +167,13 @@ export default function Sidebar() {
                   {/* : ({Math.floor(fromNormalized(token.x, token.y).x)},{' '}
                 {Math.floor(fromNormalized(token.y, token.y).y)}) */}
                 </span>
-                {isFFA ? player.lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
+                {isGroup ? (
+                  player.lockedIn ? (
+                    <LockIcon />
+                  ) : (
+                    <UnlockIcon />
+                  )
+                ) : null}
               </li>
             );
           })}
