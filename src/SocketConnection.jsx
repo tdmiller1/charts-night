@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { SocketConnectionContext } from './Contexts/contexts';
+import ErrorBoundary from './ErrorBoundary';
 
 export default function SocketConnection({ children }) {
   // if dev environment set wsUrl to localhost
@@ -69,14 +70,13 @@ export default function SocketConnection({ children }) {
         wsRef.current = null; // Clear the reference on close
       }
       setConnectionError('Lost connection to server.');
-      setWsUrl('');
-      setConnecting(false);
+      logoutUser(); // Disconnect user client on close
     };
 
     ws.onerror = () => {
       clearTimeout(authTimeout);
       setError('Could not connect to server.');
-      setConnecting(false);
+      logoutUser(); // Disconnect user client on error
     };
   };
 
