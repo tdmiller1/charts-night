@@ -1,9 +1,16 @@
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket as WS } from 'ws';
-import { handleAuth } from '../../services/usersService.js';
+import { handleAuth, setUserColor } from '../../services/usersService.js';
 import { gameRoom, tokens, photos } from '../../index.js';
-import { handleTokenMovement } from '../../services/tokenService.js';
-import { handlePhotoPreset } from '../../services/gameService.js';
+import { handlePlayerTokenMovement } from '../../services/tokenService.js';
+import {
+  handlePhotoPreset,
+  handleUpdateGameMode,
+  submitTokenPlacement,
+  handleResetGame,
+  resetUserTokenPlacement,
+} from '../../services/gameService.js';
+import { handleClose } from './onDisconnect.js';
 
 const PINGPONGTIMEOUT = 15000; // 15 seconds
 
@@ -29,6 +36,7 @@ export default function onConnect(ws, wss) {
     console.log(`Pong received from user ${ws.userId}`);
     console.log(`Tokens: `, Object.keys(tokens));
     console.log(`GameState: `, gameRoom);
+    console.log('Photos', Object.keys(photos));
     // Reset the ping interval if pong is received
     clearInterval(pingInterval);
     setTimeout(() => {
@@ -54,29 +62,15 @@ export default function onConnect(ws, wss) {
     }
 
     if (data.type === 'move' && data.token) {
-      handleTokenMovement(data.token, ws.userId, wss);
-    }
-
-    if (
-      data.type === 'lockedIn' &&
-      data.token &&
-      typeof data.lockedIn === 'boolean'
-    ) {
-      // Update lockedIn state for this user
-      if (tokens[ws.userId]) {
-        console.log(`User ${ws.userId} locked in: ${data.lockedIn}`);
-        tokens[ws.userId].lockedIn = data.lockedIn;
-      }
-      // Broadcast updated tokens
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'tokens', tokens }));
-        }
-      });
+      handlePlayerTokenMovement(data.token, ws.userId, wss);
     }
 
     if (data.type === 'photoPreset') {
-      handlePhotoPreset(ws, data);
+      handlePhotoPreset(ws, data, wss);
+    }
+
+    if (data.type === 'resetGame') {
+      handleResetGame(wss);
     }
 
     if (data.type === 'addPhoto' && data.photo) {
@@ -107,96 +101,44 @@ export default function onConnect(ws, wss) {
         }
       });
     }
-    if (data.type === 'resetLockedIn') {
-      // Reset all users' lockedIn state
-      Object.keys(tokens).forEach((id) => {
-        tokens[id].lockedIn = false;
-      });
-      // Broadcast updated tokens
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'lockReset', tokens }));
-        }
-      });
-    }
 
     if (data.type === 'auth') {
-      handleAuth(ws, data, tokens, photos, gameRoom);
+      handleAuth(ws, data, wss);
     }
 
-    if (data.type === 'gameRoom' && data.room) {
+    if (data.type === 'submitGroupTokens') {
+      submitTokenPlacement(ws, data.data, wss);
+    }
+
+    if (data.type === 'resetGroupTokens') {
+      resetUserTokenPlacement(ws);
+    }
+
+    if (data.type === 'setColor') {
+      setUserColor(ws, data.color, wss);
+    }
+
+    if (data.type === 'claimHost') {
       // Update game room state
-      Object.assign(gameRoom, data.room);
+      if (gameRoom.host) return;
+      gameRoom.host = ws.userId;
       console.log(`Game room updated by user ${ws.userId}:`, gameRoom);
       // Broadcast updated game room to all clients
       wss.clients.forEach((client) => {
         if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
+          client.send(
+            JSON.stringify({ type: 'gameState', gameState: gameRoom })
+          );
         }
       });
     }
 
     if (data.type === 'gameMode' && data.mode) {
-      if (!gameRoom.host || gameRoom.host !== ws.userId) {
-        console.warn(
-          `User ${ws.userId} attempted to change game mode but is not the host.`
-        );
-        return; // Only the host can change the game mode
-      }
-      // Update game mode
-      gameRoom.mode = data.mode;
-
-      if (data.mode === 'ffa') {
-        // Reset all tokens to default positions for FFA mode
-        Object.keys(tokens).forEach((id) => {
-          tokens[id].lockedIn = false; // Reset lockedIn state
-        });
-      }
-
-      console.log(`Game mode updated by user ${ws.userId}:`, gameRoom.mode);
-      // Broadcast updated game mode to all clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
-          client.send(JSON.stringify({ type: 'tokens', tokens }));
-        }
-      });
+      handleUpdateGameMode(ws, data.mode, wss);
     }
   });
 
   ws.on('close', () => {
-    console.log(`User ${ws.userId} disconnected`);
-    delete tokens[ws.userId];
-
-    if (gameRoom.host === ws.userId) {
-      // If the host disconnects, find a new host or reset the game room
-      console.log(`Host ${ws.userId} disconnected, selecting new host`);
-      const remainingClients = Array.from(wss.clients).filter(
-        (client) => client.readyState === WS.OPEN && client.userId !== ws.userId
-      );
-      if (remainingClients.length > 0) {
-        // Select a new host from remaining clients
-        const newHost = remainingClients[0].userId;
-        gameRoom.host = newHost;
-        console.log(`New host selected: ${newHost}`);
-      } else {
-        // No remaining clients, reset the game room
-        console.log('No remaining clients, resetting game room');
-        delete gameRoom.host;
-        gameRoom.mode = 'ffa'; // Reset to default mode
-      }
-      // Broadcast reset to all clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WS.OPEN) {
-          client.send(JSON.stringify({ type: 'gameRoom', room: gameRoom }));
-        }
-      });
-    }
-    // Broadcast updated tokens
-    wss.clients.forEach((client) => {
-      if (client.readyState === WS.OPEN) {
-        client.send(JSON.stringify({ type: 'tokens', tokens }));
-      }
-    });
+    handleClose(ws, wss);
   });
 }

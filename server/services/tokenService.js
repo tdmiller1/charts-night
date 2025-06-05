@@ -1,23 +1,55 @@
 import { WebSocket as WS } from 'ws';
 import { gameRoom, tokens } from '../index.js';
+import { canLoggedInUserMoveToken } from '../utils.js';
 
-export function handleTokenMovement(token, loggedInUser, wss) {
-  if (gameRoom.mode === 'ffa' && token.userId !== loggedInUser) {
-    return;
-  }
+export function handlePlayerTokenMovement(token, loggedInUserId, wss) {
   if (
-    gameRoom.mode === 'god' &&
-    token.userId !== loggedInUser &&
-    gameRoom.host !== loggedInUser
+    !canLoggedInUserMoveToken(
+      token.id,
+      loggedInUserId,
+      gameRoom.mode,
+      gameRoom.host
+    )
   ) {
     console.warn(
-      `User ${loggedInUser} attempted to move but is not the host in god mode.`
+      `User ${loggedInUserId} attempted to move but is not the host in god mode.`
     );
-    return; // Only the host can move tokens in god mode
+    return;
   }
 
-  tokens[token.userId] = { ...token };
-  // Broadcast to all clients
+  addOrUpdateTokenToRoom(wss, token);
+}
+
+export function addOrUpdateTokenToRoom(wss, token) {
+  tokens[token.id] = token;
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
+}
+
+export function removeTokenFromRoom(wss, tokenId) {
+  delete tokens[tokenId];
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
+}
+
+export function removeAllTokensAndBroadcast(wss) {
+  Object.keys(tokens).forEach((id) => {
+    delete tokens[id];
+  });
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
+}
+
+export function broadcastTokens(wss) {
   wss.clients.forEach((client) => {
     if (client.readyState === WS.OPEN) {
       client.send(JSON.stringify({ type: 'tokens', tokens }));

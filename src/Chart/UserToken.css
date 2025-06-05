@@ -1,0 +1,26 @@
+.UserToken {
+  position: relative; /* Needed for absolute positioning of popper */
+  color: yellow;
+  cursor: pointer;
+}
+
+.UserToken .popper {
+  display: none;
+  position: absolute;
+  top: -150%; /* Show below the token */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 10;
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.UserToken:hover .popper,
+.UserToken:focus .popper {
+  display: block;
+}

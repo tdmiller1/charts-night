@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { SocketConnectionContext } from './Contexts/contexts';
+import Tooltip from './shared/Tooltip';
 
-export default function SocketConnection({ children }) {
+export default function SocketConnection({ hasError, children }) {
   // if dev environment set wsUrl to localhost
   const [wsUrl, setWsUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('ws://localhost:3001');
@@ -11,7 +12,7 @@ export default function SocketConnection({ children }) {
   const [password, setPassword] = useState('');
   const wsRef = useRef(null);
 
-  const handleConnect = (pwd, nn = '') => {
+  const handleConnect = async (pwd, nn = '') => {
     setConnecting(true);
     setError('');
     let ws;
@@ -66,32 +67,43 @@ export default function SocketConnection({ children }) {
     ws.onclose = () => {
       clearTimeout(authTimeout);
       if (wsRef.current === ws) {
+        console.log('WebSocket connection closed');
         wsRef.current = null; // Clear the reference on close
       }
       setConnectionError('Lost connection to server.');
-      setWsUrl('');
-      setConnecting(false);
+      logoutUser(); // Disconnect user client on close
     };
 
     ws.onerror = () => {
       clearTimeout(authTimeout);
+      console.error('WebSocket error occurred');
       setError('Could not connect to server.');
-      setConnecting(false);
+      logoutUser(); // Disconnect user client on error
     };
   };
 
-  function logoutUser() {
+  const logoutUser = useCallback(() => {
+    console.log('Logging out user', wsRef.current);
     if (wsRef.current) {
+      console.log('Closing WebSocket connection');
       wsRef.current.close();
       wsRef.current = null; // Clear the reference
+      setWsUrl('');
+      setInputUrl('ws://localhost:3001');
+      setConnecting(false);
+      setError('');
+      setConnectionError('');
+      setPassword('');
     }
-    setWsUrl('');
-    setInputUrl('ws://localhost:3001');
-    setConnecting(false);
-    setError('');
-    setConnectionError('');
-    setPassword('');
-  }
+  }, []);
+
+  // useEffect(() => {
+  //   console.log('Setting logoutUser in SocketConnection:', logoutUser);
+  //   setLogoutUser(() => {
+  //     // logoutUser();
+  //     return logoutUser;
+  //   });
+  // }, [logoutUser, setLogoutUser]);
 
   // Monitor connection after login
   // useEffect(() => {
@@ -190,13 +202,18 @@ export default function SocketConnection({ children }) {
             name="nickname"
             style={{ padding: '0.5rem', fontSize: '1rem' }}
           />
-          <button
-            type="submit"
-            style={{ padding: '0.5rem', fontSize: '1rem' }}
-            disabled={connecting}
-          >
-            {connecting ? 'Connecting...' : 'Connect'}
-          </button>
+
+          {React.cloneElement(
+            hasError ? <Tooltip content="Please refresh the page" /> : <></>,
+            {},
+            <button
+              type="submit"
+              style={{ padding: '0.5rem', fontSize: '1rem' }}
+              disabled={connecting || hasError}
+            >
+              {connecting ? 'Connecting...' : 'Connect'}
+            </button>
+          )}
           {(error || connectionError) && (
             <div style={{ color: 'red', fontSize: '0.9rem' }}>
               {error || connectionError}

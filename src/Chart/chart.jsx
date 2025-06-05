@@ -36,6 +36,7 @@ export default function Chart({ width = 1000, height = 1000 }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          color: '#888',
         }}
       >
         <p>No photos added, add them in the Sidebar</p>

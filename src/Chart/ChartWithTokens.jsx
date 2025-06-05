@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import '../App.css';
 import Chart from './chart';
 import { UserToken } from './UserToken';
@@ -7,13 +7,48 @@ import {
   useGameController,
   useCurrentUser,
 } from '../Contexts/hooks';
+import GameboardTokens from './GameboardTokens';
 
-export default function ChartWithTokens() {
+export function ChartWithTokens() {
   const { tokens } = useTokens();
-  const { userId, size, setSize, lockedIn } = useCurrentUser();
-  const { userHandleMouseMove, gameState } = useGameController();
+  const { userId, size, setSize } = useCurrentUser();
+  const {
+    userHandleMouseMove,
+    gameState,
+    userSubmitTokenPlacement,
+    userResetTokenPlacement,
+    userResetGame,
+  } = useGameController();
+  const [clientTokens, setClientTokens] = useState({});
 
-  const isFFA = gameState.mode === 'ffa';
+  const moveServerToken = gameState.mode !== 'group';
+
+  useEffect(() => {
+    if (!moveServerToken && gameState.players) {
+      setClientTokens((prevTokens) => {
+        const newTokens = { ...prevTokens };
+        // Remove tokens for players no longer present
+        Object.keys(newTokens).forEach((id) => {
+          if (!gameState.players[id]) {
+            delete newTokens[id];
+          }
+        });
+        // Add tokens for new players
+        Object.entries(gameState.players).forEach(([id, player]) => {
+          if (!newTokens[id]) {
+            newTokens[id] = {
+              ...player,
+              id: player.userId,
+              label: player.name || `Player ${id}`,
+              x: 200,
+              y: Math.random() * 500 + 200, // Default position for client tokens
+            };
+          }
+        });
+        return newTokens;
+      });
+    }
+  }, [gameState, moveServerToken]);
 
   // Track client container size
   const containerRef = useRef(null);
@@ -37,6 +72,41 @@ export default function ChartWithTokens() {
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
+  const hasUserSubmitted = gameState.players[userId]?.lockedIn;
+  const hasEveryoneSubmitted = Object.values(gameState.players).every(
+    (player) => player.lockedIn
+  );
+  const isGroupGame = gameState.mode === 'group';
+
+  const groupModeButtonText = useMemo(() => {
+    if (gameState['players'] === undefined) return 'Loading...';
+    if (!isGroupGame) return null;
+    if (hasUserSubmitted) {
+      if (hasEveryoneSubmitted) {
+        if (userId === gameState.host) {
+          return 'Reset Token Placements';
+        } else {
+          return 'Waiting for host to reset';
+        }
+      } else {
+        return 'Keep Moving Tokens';
+      }
+    } else {
+      return 'Lock In Tokens';
+    }
+  }, [gameState, hasEveryoneSubmitted, hasUserSubmitted, isGroupGame, userId]);
+
+  const handleGroupModeButtonClick = () => {
+    if (hasEveryoneSubmitted && userId === gameState.host) {
+      userResetGame();
+    } else {
+      userResetTokenPlacement();
+    }
+    if (!hasUserSubmitted) {
+      userSubmitTokenPlacement(Object.values(clientTokens));
+    }
+  };
+
   // --- Coordinate normalization helpers ---
   // Convert absolute px to normalized (0-1000) for server
   function toNormalized(x, y) {
@@ -45,98 +115,111 @@ export default function ChartWithTokens() {
       y: (y / size.height) * 1000,
     };
   }
-  // Convert normalized (0-1000) to px for local rendering
-  function fromNormalized(x, y) {
-    return {
-      x: (x / 1000) * size.width,
-      y: (y / 1000) * size.height,
-    };
-  }
-
-  // Drag logic for this user's token
-  const handleMouseDown = (e, token) => {
-    if (lockedIn) return;
-    setDragging(token);
-    // const myToken = tokens[userId];
-    // Convert normalized to px for offset
-    const { x, y } = fromNormalized(token.x, token.y);
-    setOffset({
-      x: e.clientX - x,
-      y: e.clientY - y,
-    });
-  };
 
   const handleMouseMove = (e) => {
-    if (dragging && userId) {
-      // Convert mouse px to normalized for server
-      const { x, y } = toNormalized(e.clientX - offset.x, e.clientY - offset.y);
-      const newToken = {
-        ...dragging,
-        x,
-        y,
-      };
+    if (moveServerToken) {
+      if (dragging && userId) {
+        // Convert mouse px to normalized for server
+        const { x, y } = toNormalized(
+          e.clientX - offset.x,
+          e.clientY - offset.y
+        );
+        const newToken = {
+          ...dragging,
+          x,
+          y,
+        };
 
-      userHandleMouseMove({ newToken });
+        userHandleMouseMove({ newToken });
+      }
+    } else {
+      // Client-side only dragging
+      if (dragging) {
+        const { x, y } = toNormalized(
+          e.clientX - offset.x,
+          e.clientY - offset.y
+        );
+        const newToken = {
+          ...dragging,
+          x,
+          y,
+        };
+        setClientTokens((prevTokens) => ({
+          ...prevTokens,
+          [dragging.userId]: newToken,
+        }));
+      }
     }
   };
 
   const handleMouseUp = () => setDragging(null);
 
-  const disableDragging = !isFFA && gameState.host !== userId;
+  const dynamicTokens = useMemo(() => {
+    if (gameState.mode === 'group') {
+      if (hasEveryoneSubmitted) {
+        return Object.assign(
+          {},
+          tokens,
+          hasEveryoneSubmitted ? {} : clientTokens
+        );
+      }
+      return clientTokens;
+    }
+    return tokens;
+  }, [clientTokens, gameState.mode, hasEveryoneSubmitted, tokens]);
+
+  if (gameState['players'] === undefined) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        width: '80vw',
-        height: '80vh',
-        maxWidth: '1000px',
-        maxHeight: '1000px',
-        position: 'relative',
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      <Chart
-        key={`${size.width}:${size.height}`}
-        width={size.width}
-        height={size.height}
-      />
-      {/* Render all user tokens */}
-      {Object.values(tokens).map((token) => {
-        // Convert normalized to px for rendering
-        const { x, y } = fromNormalized(token.x, token.y);
-
-        const canUserDragForFFA = isFFA && token.userId === userId;
-        const canUserDragForGod = !isFFA && gameState.host === userId;
-
-        function truncateLabel(l) {
-          if (!l) return 'Unknown';
-          if (l.length > 4) {
-            return l.slice(0, 4);
-          }
-          return l;
-        }
-
-        const label = truncateLabel(token?.label || token.userId);
-
-        return (
-          <UserToken
-            disableDragging={!canUserDragForFFA && !canUserDragForGod}
-            key={token.userId}
-            x={x}
-            y={y}
-            color={token.color}
-            label={token.userId !== userId ? label : 'You'}
-            onMouseDown={(e) =>
-              !disableDragging ? handleMouseDown(e, token) : undefined
-            }
-            lockedIn={lockedIn}
-            dragging={dragging}
-          />
-        );
-      })}
-    </div>
+    <>
+      {isGroupGame && (
+        <button
+          disabled={hasEveryoneSubmitted && userId !== gameState.host}
+          onClick={handleGroupModeButtonClick}
+        >
+          {groupModeButtonText}
+        </button>
+      )}
+      <div
+        ref={containerRef}
+        style={{
+          width: '80vw',
+          height: '80vh',
+          maxWidth: '1000px',
+          maxHeight: '1000px',
+          position: 'relative',
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <Chart
+          key={`${size.width}:${size.height}`}
+          width={size.width}
+          height={size.height}
+        />
+        {/* Render all server tokens */}
+        <GameboardTokens
+          tokens={dynamicTokens}
+          setOffset={setOffset}
+          dragging={dragging}
+          setDragging={setDragging}
+          clientSide={!moveServerToken}
+          disableDragging={gameState.mode === 'group' && hasUserSubmitted}
+        />
+      </div>
+    </>
   );
+}
+
+export default function ChartWithTokensContainer() {
+  const { userId } = useCurrentUser();
+  const { gameState } = useGameController();
+
+  if (!userId || !gameState) {
+    return <div>Loading...</div>;
+  }
+  return <ChartWithTokens />;
 }
