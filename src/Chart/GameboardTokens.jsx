@@ -54,8 +54,7 @@ export default function GameboardTokens({
               gameState.host
             ));
         function truncateLabel(l) {
-          if (!l) return 'Unknown';
-          if (l.length > 4) {
+          if (l?.length > 4) {
             return l.slice(0, 4);
           }
           return l;
@@ -77,8 +76,7 @@ export default function GameboardTokens({
           token.nickname ||
           (gameState.mode === 'group' && hasEveryoneSubmitted
             ? playerWhoSubmitted
-            : token.id) ||
-          'Unknown';
+            : token.id);
 
         const label = truncateLabel(
           token.id === userId
