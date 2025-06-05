@@ -2,10 +2,9 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBug } from '@fortawesome/free-solid-svg-icons';
 import Tooltip from './shared/Tooltip';
-import { SocketConnectionContext } from './Contexts/contexts';
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children: React.ReactElement<any> | React.ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -18,12 +17,13 @@ class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  static contextType = SocketConnectionContext;
-  declare context: React.ContextType<typeof SocketConnectionContext>;
-
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
   }
 
   static getDerivedStateFromError(error: Error) {
@@ -32,10 +32,6 @@ class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     this.setState({ error, errorInfo });
-    // Disconnect user client if available
-    if (this.context && typeof this.context.logoutUser === 'function') {
-      this.context.logoutUser();
-    }
   }
 
   render() {
@@ -44,6 +40,7 @@ class ErrorBoundary extends React.Component<
         <>
           <div
             style={{
+              zIndex: 1000,
               padding: '20px',
               backgroundColor: '#f8d7da',
               color: '#721c24',
@@ -65,6 +62,7 @@ class ErrorBoundary extends React.Component<
                 {this.state.errorInfo.componentStack}
               </details>
             )}
+            <h4>Please refresh the page</h4>
           </div>
           <Tooltip content="Report a bug">
             <button
@@ -80,7 +78,9 @@ class ErrorBoundary extends React.Component<
               <FontAwesomeIcon icon={faBug} />
             </button>
           </Tooltip>
-          {this.props.children}
+          {React.isValidElement(this.props.children)
+            ? React.cloneElement(this.props.children, { hasError: true } as any)
+            : this.props.children}
         </>
       );
     }
