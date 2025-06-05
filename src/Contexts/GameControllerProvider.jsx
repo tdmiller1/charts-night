@@ -62,47 +62,12 @@ export function GameControllerProvider({ children }) {
     };
   }, [setTokens, setUserId, tokens, wsConnection]);
 
-  // On first connect, set token into x,y
   useEffect(() => {
-    // function toNormalized(x, y) {
-    //   return {
-    //     x: (x / size.width) * 1000,
-    //     y: (y / size.height) * 1000,
-    //   };
-    // }
-
-    // if (gameState.mode === 'group' && Object.keys(tokens).length === 0) {
-    //   return;
-    // }
-    // if (!size) return;
-    // if (
-    //   userId &&
-    //   tokens[userId].x === undefined &&
-    //   tokens[userId].y === undefined
-    // ) {
-    //   const color =
-    //     tokens[userId].color ||
-    //     `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-    //   const label = tokens[userId].nickname || userId;
-    //   // Always send normalized coordinates to server
-    //   // TODO: Refactor away userId assumption as id
-    //   const token = {
-    //     ...toNormalized(Math.random() * 500 + 200, 200),
-    //     color,
-    //     label,
-    //     id: userId,
-    //   };
-    //   ws.current.send(JSON.stringify({ type: 'move', token }));
-    //   console.log(gameState);
-    // if (gameState?.host === undefined) {
-    console.log(userId);
     ws.current.send(
       JSON.stringify({
         type: 'claimHost',
       })
     );
-    // }
-    // }
   }, [userId]);
 
   function userHandleMouseMove({ newToken }) {
@@ -144,9 +109,7 @@ export function GameControllerProvider({ children }) {
 
   function userChangeGameMode(mode) {
     if (gameState.mode === mode) return; // No change needed
-    if (mode === 'god') {
-      // TEST
-    }
+
     ws.current.send(
       JSON.stringify({
         type: 'gameMode',

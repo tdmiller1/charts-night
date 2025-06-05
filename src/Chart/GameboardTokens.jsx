@@ -53,7 +53,6 @@ export default function GameboardTokens({
               gameState.mode,
               gameState.host
             ));
-
         function truncateLabel(l) {
           if (!l) return 'Unknown';
           if (l.length > 4) {
@@ -61,10 +60,39 @@ export default function GameboardTokens({
           }
           return l;
         }
+        // Regex find the first UUID after 'player-', examples:
+        // player-97f0bb4f-ef48-4227-8a1b-4a9d533d098d-f55f32dc-9f40-4ae9-90f8-6d782fd67933 -> 97f0bb4f-ef48-4227-8a1b-4a9d533d098d
+        // avg-97f0bb4f-ef48-4227-8a1b-4a9d533d098d -> null
+        const playerIdRegex =
+          /^player-([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
+        const playerWhoSubmitted = token.id.match(playerIdRegex)
+          ? token.id.match(/player-([a-z0-9-]+)/)[1]
+          : null;
 
-        const label =
-          gameState.mode !== 'group' &&
-          truncateLabel(token.id === userId ? 'You' : token.id);
+        const hasEveryoneSubmitted =
+          gameState.mode === 'group' &&
+          Object.values(gameState.players).every((player) => player.lockedIn);
+
+        const availableLabel =
+          token.nickname ||
+          (gameState.mode === 'group' && hasEveryoneSubmitted
+            ? playerWhoSubmitted
+            : token.id) ||
+          'Unknown';
+
+        const label = truncateLabel(
+          token.id === userId
+            ? gameState.mode !== 'group'
+              ? 'You'
+              : availableLabel
+            : availableLabel
+        );
+
+        // The border color is the color of the players token that submitted it, so using the tokens id.
+        // If it has player-PLAYERID we'll go and find that players color from GameState, else its just undefined
+        const borderColor = playerWhoSubmitted
+          ? gameState.players[playerWhoSubmitted]?.color
+          : undefined;
 
         return (
           <UserToken
@@ -73,6 +101,14 @@ export default function GameboardTokens({
             x={x}
             y={y}
             color={token.color}
+            borderColor={borderColor}
+            playerWhoSubmitted={
+              hasEveryoneSubmitted && playerWhoSubmitted
+                ? 'Chosen by ' +
+                  (gameState.players[playerWhoSubmitted]?.nickname ||
+                    playerWhoSubmitted)
+                : undefined
+            }
             label={label}
             onMouseDown={(e) =>
               canUserDragToken ? handleMouseDown(e, token) : undefined

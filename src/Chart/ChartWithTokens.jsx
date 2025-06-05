@@ -39,6 +39,7 @@ export function ChartWithTokens() {
             newTokens[id] = {
               ...player,
               id: player.userId,
+              label: player.name || `Player ${id}`,
               x: 200,
               y: Math.random() * 500 + 200, // Default position for client tokens
             };
@@ -76,8 +77,6 @@ export function ChartWithTokens() {
     (player) => player.lockedIn
   );
   const isGroupGame = gameState.mode === 'group';
-  console.log(gameState.players);
-  console.log('Has user submitted:', hasUserSubmitted);
 
   const groupModeButtonText = useMemo(() => {
     if (gameState['players'] === undefined) return 'Loading...';
@@ -136,7 +135,6 @@ export function ChartWithTokens() {
     } else {
       // Client-side only dragging
       if (dragging) {
-        console.log('Dragging token:', dragging);
         const { x, y } = toNormalized(
           e.clientX - offset.x,
           e.clientY - offset.y
@@ -156,14 +154,24 @@ export function ChartWithTokens() {
 
   const handleMouseUp = () => setDragging(null);
 
+  const dynamicTokens = useMemo(() => {
+    if (gameState.mode === 'group') {
+      if (hasEveryoneSubmitted) {
+        return Object.assign(
+          {},
+          tokens,
+          hasEveryoneSubmitted ? {} : clientTokens
+        );
+      }
+      return clientTokens;
+    }
+    return tokens;
+  }, [clientTokens, gameState.mode, hasEveryoneSubmitted, tokens]);
+
   if (gameState['players'] === undefined) {
     return <div>Loading...</div>;
   }
 
-  // TODO: Make sure you move the tokens before selecting "Done". Perhaps theres some validation
-  // TODO: Have labels work for the client tokens
-  // TODO: Whenever we receive all of the average tokens, make sure its obvious which tokens belong to which player, and which tokens are FOR each player
-  // Consider a color gradient, or if you add profile pictures. Just use the profile picture and the token border will be the color of the player that submitted it
   return (
     <>
       {isGroupGame && (
@@ -194,12 +202,12 @@ export function ChartWithTokens() {
         />
         {/* Render all server tokens */}
         <GameboardTokens
-          tokens={Object.assign({}, tokens, clientTokens)}
+          tokens={dynamicTokens}
           setOffset={setOffset}
           dragging={dragging}
           setDragging={setDragging}
           clientSide={!moveServerToken}
-          disableDragging={hasUserSubmitted}
+          disableDragging={gameState.mode === 'group' && hasUserSubmitted}
         />
       </div>
     </>

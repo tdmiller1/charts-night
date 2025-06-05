@@ -37,3 +37,14 @@ export function removeTokenFromRoom(wss, tokenId) {
     }
   });
 }
+
+export function removeAllTokensAndBroadcast(wss) {
+  Object.keys(tokens).forEach((id) => {
+    delete tokens[id];
+  });
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
+}

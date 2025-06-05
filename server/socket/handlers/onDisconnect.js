@@ -1,6 +1,7 @@
 import { WebSocket as WS } from 'ws';
 import { tokens, gameRoom } from '../../index.js';
 import { broadcastNewGameState } from '../../services/gameService.js';
+import { removeAllTokensAndBroadcast } from '../../services/tokenService.js';
 
 export function handleClose(ws, wss) {
   console.log(`User ${ws.userId} disconnected`);
@@ -23,6 +24,7 @@ export function handleClose(ws, wss) {
       console.log('No remaining clients, resetting game room');
       delete gameRoom.host;
       gameRoom.mode = 'ffa'; // Reset to default mode
+      removeAllTokensAndBroadcast(wss);
     }
     // Broadcast reset to all clients
     wss.clients.forEach((client) => {

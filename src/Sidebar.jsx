@@ -1,4 +1,10 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBug } from '@fortawesome/free-solid-svg-icons';
+import Tooltip from './shared/Tooltip';
+
 import { useGameController } from './Contexts/hooks';
+import { isColorTooLight } from './shared/utils';
+import { BUG_REPORT_URL } from './constants';
 
 export default function Sidebar() {
   const { userAddPhoto, gameState, userSelectPhotoPreset } =
@@ -96,27 +102,6 @@ export default function Sidebar() {
     </svg>
   );
 
-  // Utility to check if a color is too light for white text
-  function isColorTooLight(hex) {
-    // Remove # if present
-    hex = hex.replace(/^#/, '');
-    // Expand short form (e.g. #abc)
-    if (hex.length === 3) {
-      hex = hex
-        .split('')
-        .map((c) => c + c)
-        .join('');
-    }
-    // Parse r, g, b
-    const num = parseInt(hex, 16);
-    const r = (num >> 16) & 255;
-    const g = (num >> 8) & 255;
-    const b = num & 255;
-    // Perceived luminance
-    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-    return luminance > 180; // threshold for white text
-  }
-
   const isGroup = gameState?.mode === 'group';
 
   return (
@@ -179,6 +164,20 @@ export default function Sidebar() {
           })}
         </ul>
         <button onClick={handleAddPhoto}>Add Photo</button>
+        <Tooltip content="Report a bug" bottom={70} right={5}>
+          <button
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              right: '24px',
+            }}
+            onClick={() => {
+              window.open(BUG_REPORT_URL, '_blank');
+            }}
+          >
+            <FontAwesomeIcon icon={faBug} />
+          </button>
+        </Tooltip>
       </div>
       {/* Use a select dropdown */}
       <div style={{ marginTop: 10 }}>
