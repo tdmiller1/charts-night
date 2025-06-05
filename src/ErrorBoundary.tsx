@@ -1,4 +1,7 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBug } from '@fortawesome/free-solid-svg-icons';
+import Tooltip from './shared/Tooltip';
 import { SocketConnectionContext } from './Contexts/contexts';
 
 interface ErrorBoundaryProps {
@@ -63,11 +66,43 @@ class ErrorBoundary extends React.Component<
               </details>
             )}
           </div>
+          <Tooltip content="Report a bug">
+            <button
+              style={{
+                position: 'fixed',
+                bottom: '24px',
+                right: '24px',
+              }}
+              onClick={() => {
+                window.open('https://forms.gle/cgYmRzVSgaxJruXW7');
+              }}
+            >
+              <FontAwesomeIcon icon={faBug} />
+            </button>
+          </Tooltip>
           {this.props.children}
         </>
       );
     }
-    return this.props.children;
+    return (
+      <>
+        <Tooltip content="Report a bug" bottom={70} right={5}>
+          <button
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              right: '24px',
+            }}
+            onClick={() => {
+              window.open('https://forms.gle/cgYmRzVSgaxJruXW7');
+            }}
+          >
+            <FontAwesomeIcon icon={faBug} />
+          </button>
+        </Tooltip>
+        {this.props.children}
+      </>
+    );
   }
 }
 
