@@ -74,8 +74,8 @@ export function PlayerItem({ id, color, userId, nickname, lockedIn, isGroup }) {
 
   function truncateLabel(l) {
     if (!l) return 'Unknown';
-    if (l.length > 20) {
-      return l.slice(0, 20) + '... ';
+    if (l.length > 17) {
+      return l.slice(0, 17) + '... ';
     }
     return l;
   }
