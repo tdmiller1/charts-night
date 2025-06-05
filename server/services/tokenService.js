@@ -48,3 +48,11 @@ export function removeAllTokensAndBroadcast(wss) {
     }
   });
 }
+
+export function broadcastTokens(wss) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
+}

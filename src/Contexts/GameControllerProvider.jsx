@@ -152,6 +152,15 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function handleUserSettingColor(color) {
+    ws.current.send(
+      JSON.stringify({
+        type: 'setColor',
+        color: color,
+      })
+    );
+  }
+
   return (
     <GameControllerContext.Provider
       value={{
@@ -164,6 +173,7 @@ export function GameControllerProvider({ children }) {
         userSubmitTokenPlacement,
         userResetGame,
         userResetTokenPlacement,
+        handleUserSettingColor,
         gameState,
       }}
     >

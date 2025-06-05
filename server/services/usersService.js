@@ -1,7 +1,12 @@
 import dotenv from 'dotenv';
 import process from 'process';
 import { tokens, gameRoom } from '../index.js';
-import { broadcastNewGameState, handleUserInit } from './gameService.js';
+import {
+  broadcastGameState,
+  broadcastNewGameState,
+  handleUserInit,
+} from './gameService.js';
+import { broadcastTokens } from './tokenService.js';
 
 dotenv.config();
 
@@ -53,4 +58,26 @@ export function handleAuth(ws, data, wss) {
     ws.close();
     return;
   }
+}
+
+export function setUserColor(ws, color, wss) {
+  if (gameRoom.players[ws.userId] === undefined) {
+    console.warn('Cannot set color for player, missing player');
+    return;
+  }
+  console.log('Setting user color', ws.userId, color);
+  gameRoom.players[ws.userId] = {
+    ...gameRoom.players[ws.userId],
+    color,
+  };
+  if (tokens[ws.userId]) {
+    // Find users tokens
+    tokens[ws.userId] = {
+      ...tokens[ws.userId],
+      color,
+    };
+  }
+
+  broadcastGameState(wss);
+  broadcastTokens(wss);
 }

@@ -5,7 +5,7 @@ import { gameRoom, photos, tokens } from '../index.js';
 import { WebSocket as WS } from 'ws';
 import fs from 'fs/promises';
 import path from 'path';
-import { addOrUpdateTokenToRoom } from './tokenService.js';
+import { addOrUpdateTokenToRoom, broadcastTokens } from './tokenService.js';
 
 const PHOTO_PRESETS = {
   fish: [
@@ -175,11 +175,7 @@ export function submitTokenPlacement(ws, submittedTokens, wss) {
     console.log(tokens);
 
     // Broadcast averaged tokens to all players
-    wss.clients.forEach((client) => {
-      if (client.readyState === WS.OPEN) {
-        client.send(JSON.stringify({ type: 'tokens', tokens }));
-      }
-    });
+    broadcastTokens(wss);
   }
 }
 
@@ -214,7 +210,7 @@ function calculateGroupPlacements() {
   // Average the positions for each token id
   return Object.values(tokenMap).map((sum) => ({
     id: `avg-${sum.id}`,
-    nickname: gameRoom.players[sum.id],
+    nickname: '',
     color: sum.color,
     x: sum.x / sum.count,
     y: sum.y / sum.count,
@@ -354,6 +350,14 @@ export function handleResetGame(wss) {
     if (client.readyState === WS.OPEN) {
       client.send(JSON.stringify({ type: 'gameState', gameState: gameRoom }));
       client.send(JSON.stringify({ type: 'tokens', tokens }));
+    }
+  });
+}
+
+export function broadcastGameState(wss) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WS.OPEN) {
+      client.send(JSON.stringify({ type: 'gameState', gameState: gameRoom }));
     }
   });
 }

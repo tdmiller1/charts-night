@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket as WS } from 'ws';
-import { handleAuth } from '../../services/usersService.js';
+import { handleAuth, setUserColor } from '../../services/usersService.js';
 import { gameRoom, tokens, photos } from '../../index.js';
 import { handlePlayerTokenMovement } from '../../services/tokenService.js';
 import {
@@ -112,6 +112,10 @@ export default function onConnect(ws, wss) {
 
     if (data.type === 'resetGroupTokens') {
       resetUserTokenPlacement(ws);
+    }
+
+    if (data.type === 'setColor') {
+      setUserColor(ws, data.color, wss);
     }
 
     if (data.type === 'claimHost') {
