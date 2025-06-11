@@ -28,8 +28,9 @@ export function UserToken({
           position: 'absolute',
           left: x,
           top: y,
-          width: 40,
-          height: 40,
+          width: playerWhoSubmitted ? 30 : 40,
+          height: playerWhoSubmitted ? 30 : 40,
+          opacity: playerWhoSubmitted ? 0.5 : 1,
           borderRadius: '50%',
           background: color,
           border: `3px solid ${borderColor}`,
@@ -51,7 +52,9 @@ export function UserToken({
         onMouseDown={onMouseDown}
       >
         {playerWhoSubmitted && (
-          <div className="popper">{playerWhoSubmitted}</div>
+          <div className="popper" style={{ opacity: 1 }}>
+            {playerWhoSubmitted}
+          </div>
         )}
         {label || '●'}
       </div>

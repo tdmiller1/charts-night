@@ -72,8 +72,11 @@ export default function GameboardTokens({
           gameState.mode === 'group' &&
           Object.values(gameState.players).every((player) => player.lockedIn);
 
+        const tokenOwner = gameState.players[token.id];
+
         const availableLabel =
           token.nickname ||
+          tokenOwner?.nickname ||
           (gameState.mode === 'group' && hasEveryoneSubmitted
             ? playerWhoSubmitted
             : token.id);

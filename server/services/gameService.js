@@ -229,6 +229,9 @@ export function handleUpdateGameMode(ws, mode, wss) {
   gameRoom.mode = mode;
 
   if (mode === 'ffa' || mode === 'god') {
+    Object.keys(tokens).forEach((id) => {
+      delete tokens[id];
+    });
     // Reset all tokens to default positions for FFA mode
     Object.values(gameRoom.players).forEach((player) => {
       console.log(player.color);
