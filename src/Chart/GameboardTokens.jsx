@@ -68,11 +68,19 @@ export default function GameboardTokens({
           ? token.id.match(/player-([a-z0-9-]+)/)[1]
           : null;
 
+        const playerWhoWasSubmitted =
+          token.id.split('*')[1] || token.id.split('avg-')[1];
+
         const hasEveryoneSubmitted =
           gameState.mode === 'group' &&
           Object.values(gameState.players).every((player) => player.lockedIn);
 
-        const tokenOwner = gameState.players[token.id];
+        const tokenOwner =
+          gameState.players[token.id] ||
+          gameState.players[playerWhoWasSubmitted];
+
+        const tokenPhoto =
+          gameState?.players?.[tokenOwner?.userId]?.pfp || null;
 
         const availableLabel =
           token.nickname ||
@@ -101,6 +109,7 @@ export default function GameboardTokens({
             key={token.id}
             x={x}
             y={y}
+            photo={tokenPhoto}
             color={token.color}
             borderColor={borderColor}
             playerWhoSubmitted={

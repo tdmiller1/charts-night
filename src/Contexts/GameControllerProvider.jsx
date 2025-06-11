@@ -161,6 +161,25 @@ export function GameControllerProvider({ children }) {
     );
   }
 
+  function userAddProfilePic(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      ws.current.send(
+        JSON.stringify({
+          type: 'addProfilePic',
+          photo: {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified,
+            dataUrl: e.target.result,
+          },
+        })
+      );
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <GameControllerContext.Provider
       value={{
@@ -174,6 +193,7 @@ export function GameControllerProvider({ children }) {
         userResetGame,
         userResetTokenPlacement,
         handleUserSettingColor,
+        userAddProfilePic,
         gameState,
       }}
     >

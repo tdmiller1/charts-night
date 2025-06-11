@@ -161,7 +161,7 @@ export function submitTokenPlacement(ws, submittedTokens, wss) {
       );
       if (Array.isArray(player.tokens)) {
         player.tokens.forEach((token) => {
-          tokens[`player-${player.userId}-${token.id}`] = {
+          tokens[`player-${player.userId}*${token.id}`] = {
             ...token,
             id: `player-${player.userId}*${token.id}`,
             color: token.color,

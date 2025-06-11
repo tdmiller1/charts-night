@@ -61,6 +61,7 @@ export default function Sidebar() {
               nickname={player.nickname}
               lockedIn={player.lockedIn}
               isGroup={isGroup}
+              profilePic={player?.pfp}
             />
           ))}
         </ul>

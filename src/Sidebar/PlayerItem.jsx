@@ -66,8 +66,16 @@ const UnlockIcon = ({ scale = 1.5 }) => (
   </svg>
 );
 
-export function PlayerItem({ id, color, userId, nickname, lockedIn, isGroup }) {
-  const { handleUserSettingColor } = useGameController();
+export function PlayerItem({
+  id,
+  color,
+  userId,
+  nickname,
+  lockedIn,
+  isGroup,
+  profilePic,
+}) {
+  const { handleUserSettingColor, userAddProfilePic } = useGameController();
   const [c, setColor] = useState(color);
   const [openColorPicker, setOpenColorPicker] = useState(false);
   const useBlack = useMemo(() => isColorTooLight(c), [c]);
@@ -80,7 +88,7 @@ export function PlayerItem({ id, color, userId, nickname, lockedIn, isGroup }) {
     return l;
   }
 
-  const label = truncateLabel(nickname === '' ? userId : nickname);
+  const label = truncateLabel(nickname === '' ? id : nickname);
   // Ref for the color picker and list item
   const pickerRef = React.useRef(null);
   const itemRef = React.useRef(null);
@@ -110,36 +118,59 @@ export function PlayerItem({ id, color, userId, nickname, lockedIn, isGroup }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [c, handleUserSettingColor, openColorPicker]);
 
+  function handleAddPhoto() {
+    // get file from user
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        userAddProfilePic(file);
+      }
+    };
+    input.click();
+  }
+
+  console.log(profilePic);
+
   return (
-    <div
-      style={{
-        minWidth: 200,
-      }}
-    >
-      <li
-        key={id}
-        ref={itemRef}
+    <>
+      <div
         style={{
-          backgroundColor: c,
-          color: useBlack ? '#000' : '#fff',
-          padding: '8px 12px',
-          marginBottom: 6,
-          borderRadius: 6,
+          minWidth: 200,
           display: 'flex',
           alignItems: 'center',
-          cursor: userId === id ? 'pointer' : 'not-allowed',
-        }}
-        onClick={() => {
-          if (userId !== id) {
-            // Only allow the user to change their own color
-            return;
-          }
-          setOpenColorPicker(true);
+          gap: 8,
+          marginBottom: 6,
         }}
       >
-        <span style={{ flex: 1 }}>{label}</span>
-        {isGroup ? lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
-      </li>
+        <li
+          key={id}
+          ref={itemRef}
+          style={{
+            backgroundColor: c,
+            color: useBlack ? '#000' : '#fff',
+            padding: '8px 12px',
+            width: '100%',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            cursor: userId === id ? 'pointer' : 'not-allowed',
+          }}
+          onClick={() => {
+            if (userId !== id) {
+              // Only allow the user to change their own color
+              return;
+            }
+            setOpenColorPicker(true);
+          }}
+        >
+          <span style={{ flex: 1 }}>{label}</span>
+          {isGroup ? lockedIn ? <LockIcon /> : <UnlockIcon /> : null}
+        </li>
+        {userId === id && <button onClick={handleAddPhoto}>pfp</button>}
+      </div>
       {openColorPicker && (
         <div ref={pickerRef}>
           <HexColorPicker
@@ -150,6 +181,6 @@ export function PlayerItem({ id, color, userId, nickname, lockedIn, isGroup }) {
           />
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -13,6 +13,7 @@ export function UserToken({
   dragging,
   disableDragging,
   playerWhoSubmitted,
+  photo,
 }) {
   if (typeof label !== 'string') {
     // TODO: Fix this, idk why it happens
@@ -56,7 +57,20 @@ export function UserToken({
             {playerWhoSubmitted}
           </div>
         )}
-        {label || '●'}
+        {photo && (
+          <img
+            src={photo.dataUrl}
+            alt="Token"
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+        {!photo && (label || '●')}
       </div>
       {/* <div
         style={{

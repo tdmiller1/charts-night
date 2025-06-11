@@ -81,3 +81,18 @@ export function setUserColor(ws, color, wss) {
   broadcastGameState(wss);
   broadcastTokens(wss);
 }
+
+export function setUserPic(ws, pic, wss) {
+  if (gameRoom.players[ws.userId] === undefined) {
+    console.warn('Cannot set profile pic for player, missing player');
+    return;
+  }
+
+  gameRoom.players[ws.userId] = {
+    ...gameRoom.players[ws.userId],
+    pfp: pic,
+  };
+
+  broadcastGameState(wss);
+  broadcastTokens(wss);
+}
